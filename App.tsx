@@ -7,7 +7,7 @@ import Borrowers from './pages/Borrowers';
 import BorrowerStatement from './pages/BorrowerStatement';
 import { Borrower } from './types';
 import { subscribeToAuthChanges, logout } from './services/authService';
-import { getBorrowers, addBorrower, updateBorrower, deleteBorrower } from './services/firestoreService';
+import { getBorrowers, addBorrower, updateBorrower, deleteBorrower, repayLoan, topUpLoan, getBorrower } from './services/firestoreService';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -105,65 +105,26 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRepayment = async (id: string, amount: number) => {
-    const target = borrowers.find(b => b.id === id);
-    if (!target) return;
-
-    const newRepaid = target.repaidAmount + amount;
-    const newStatus: 'Active' | 'Completed' = newRepaid >= target.totalPayable ? 'Completed' : 'Active';
-
-    const newHistoryItem = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      amount: amount,
-      type: 'payment' as const
-    };
-
-    const updatedBorrower = {
-      ...target,
-      repaidAmount: newRepaid,
-      status: newStatus,
-      history: [...target.history, newHistoryItem]
-    };
-
+  const handleRepayment = async (id: string, amount: number, note?: string) => {
     try {
-      await updateBorrower(updatedBorrower);
-      setBorrowers(prev => prev.map(b => b.id === id ? updatedBorrower : b));
+      await repayLoan(id, amount, note);
+      const updatedBorrower = await getBorrower(id);
+      if (updatedBorrower) {
+        setBorrowers(prev => prev.map(b => b.id === id ? updatedBorrower : b));
+      }
     } catch (error) {
       console.error("Error processing repayment:", error);
       alert("Failed to process repayment.");
     }
   };
 
-  const handleTopUp = async (id: string, amount: number) => {
-    const target = borrowers.find(b => b.id === id);
-    if (!target) return;
-
-    const newLoanAmount = target.loanAmount + amount;
-    // Add same amount to payable (assuming no extra interest for the top-up instantly)
-    const newTotalPayable = target.totalPayable + amount;
-
-    // If they owed 0 and now owe money, it becomes Active.
-    const newStatus: 'Active' | 'Completed' = target.repaidAmount < newTotalPayable ? 'Active' : 'Completed';
-
-    const newHistoryItem = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      amount: amount,
-      type: 'loan' as const
-    };
-
-    const updatedBorrower = {
-      ...target,
-      loanAmount: newLoanAmount,
-      totalPayable: newTotalPayable,
-      status: newStatus,
-      history: [...target.history, newHistoryItem]
-    };
-
+  const handleTopUp = async (id: string, amount: number, note?: string) => {
     try {
-      await updateBorrower(updatedBorrower);
-      setBorrowers(prev => prev.map(b => b.id === id ? updatedBorrower : b));
+      await topUpLoan(id, amount, note);
+      const updatedBorrower = await getBorrower(id);
+      if (updatedBorrower) {
+        setBorrowers(prev => prev.map(b => b.id === id ? updatedBorrower : b));
+      }
     } catch (error) {
       console.error("Error processing top-up:", error);
       alert("Failed to process top-up.");

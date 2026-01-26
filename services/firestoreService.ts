@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
 import { Borrower } from '../types';
 
 const COLLECTION_NAME = 'borrowers';
@@ -31,4 +31,64 @@ export const getBorrower = async (id: string): Promise<Borrower | null> => {
         return { ...docSnap.data(), id: docSnap.id } as Borrower;
     }
     return null;
+};
+
+export const repayLoan = async (id: string, amount: number, note?: string) => {
+    await runTransaction(db, async (transaction) => {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        const sfDoc = await transaction.get(docRef);
+
+        if (!sfDoc.exists()) {
+            throw new Error("Borrower does not exist!");
+        }
+
+        const borrower = sfDoc.data() as Borrower;
+        const newRepaid = (borrower.repaidAmount || 0) + amount;
+        const newStatus: 'Active' | 'Completed' = newRepaid >= borrower.totalPayable ? 'Completed' : 'Active';
+
+        const newHistoryItem = {
+            id: Date.now().toString(),
+            date: new Date().toISOString(),
+            amount: amount,
+            type: 'payment' as const,
+            note: note || ''
+        };
+
+        transaction.update(docRef, {
+            repaidAmount: newRepaid,
+            status: newStatus,
+            history: [...(borrower.history || []), newHistoryItem]
+        });
+    });
+};
+
+export const topUpLoan = async (id: string, amount: number, note?: string) => {
+    await runTransaction(db, async (transaction) => {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        const sfDoc = await transaction.get(docRef);
+
+        if (!sfDoc.exists()) {
+            throw new Error("Borrower does not exist!");
+        }
+
+        const borrower = sfDoc.data() as Borrower;
+        const newLoanAmount = (borrower.loanAmount || 0) + amount;
+        const newTotalPayable = (borrower.totalPayable || 0) + amount;
+        const newStatus: 'Active' | 'Completed' = (borrower.repaidAmount || 0) < newTotalPayable ? 'Active' : 'Completed';
+
+        const newHistoryItem = {
+            id: Date.now().toString(),
+            date: new Date().toISOString(),
+            amount: amount,
+            type: 'loan' as const,
+            note: note || ''
+        };
+
+        transaction.update(docRef, {
+            loanAmount: newLoanAmount,
+            totalPayable: newTotalPayable,
+            status: newStatus,
+            history: [...(borrower.history || []), newHistoryItem]
+        });
+    });
 };

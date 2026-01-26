@@ -21,8 +21,8 @@ interface BorrowersProps {
   onAdd: (b: Omit<Borrower, 'id' | 'repaidAmount' | 'status' | 'history'>) => void;
   onEdit: (b: Borrower) => void;
   onDelete: (id: string) => void;
-  onRepay: (id: string, amount: number) => void;
-  onTopUp: (id: string, amount: number) => void;
+  onRepay: (id: string, amount: number, note?: string) => void;
+  onTopUp: (id: string, amount: number, note?: string) => void;
 }
 
 const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelete, onRepay, onTopUp }) => {
@@ -66,9 +66,11 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
   });
 
   const [repayAmount, setRepayAmount] = useState('');
+  const [repayNote, setRepayNote] = useState('');
 
   // Top Up States
   const [topUpAmount, setTopUpAmount] = useState('');
+  const [topUpNote, setTopUpNote] = useState('');
 
   const filteredBorrowers = borrowers.filter(b =>
     b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -188,12 +190,14 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
   const handleOpenRepay = (b: Borrower) => {
     setRepayingId(b.id);
     setRepayAmount('');
+    setRepayNote('');
     setIsRepayModalOpen(true);
   };
 
   const handleOpenTopUp = (b: Borrower) => {
     setTopUpId(b.id);
     setTopUpAmount('');
+    setTopUpNote('');
     setIsTopUpModalOpen(true);
   };
 
@@ -224,20 +228,22 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
   const handleRepaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (repayingId && repayAmount) {
-      onRepay(repayingId, Number(repayAmount));
+      onRepay(repayingId, Number(repayAmount), repayNote);
       setIsRepayModalOpen(false);
       setRepayingId(null);
       setRepayAmount('');
+      setRepayNote('');
     }
   };
 
   const handleTopUpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (topUpId && topUpAmount) {
-      onTopUp(topUpId, Number(topUpAmount));
+      onTopUp(topUpId, Number(topUpAmount), topUpNote);
       setIsTopUpModalOpen(false);
       setTopUpId(null);
       setTopUpAmount('');
+      setTopUpNote('');
     }
   };
 
@@ -670,6 +676,16 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
                         <input required type="number" min="1" value={repayAmount} onChange={e => setRepayAmount(e.target.value)} className="pl-7 block w-full bg-slate-900/50 border border-white/10 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500 text-lg placeholder-slate-600" placeholder="0.00" />
                       </div>
                     </div>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-300">Note (Optional)</label>
+                      <textarea
+                        rows={2}
+                        value={repayNote}
+                        onChange={e => setRepayNote(e.target.value)}
+                        className="mt-1 block w-full bg-slate-900/50 border border-white/10 rounded-md shadow-sm py-2 px-3 text-white focus:ring-green-500 focus:border-green-500 sm:text-sm placeholder-slate-600"
+                        placeholder="e.g. UPI Ref #123456"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="bg-black/20 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-white/10">
@@ -709,6 +725,16 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
                           </div>
                           <input required type="number" min="1" value={topUpAmount} onChange={e => setTopUpAmount(e.target.value)} className="pl-7 block w-full bg-slate-900/50 border border-white/10 rounded-md shadow-sm py-2 px-3 text-white focus:ring-purple-500 focus:border-purple-500 placeholder-slate-600" placeholder="e.g. 5000" />
                         </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-300">Note (Optional)</label>
+                        <textarea
+                          rows={2}
+                          value={topUpNote}
+                          onChange={e => setTopUpNote(e.target.value)}
+                          className="mt-1 block w-full bg-slate-900/50 border border-white/10 rounded-md shadow-sm py-2 px-3 text-white focus:ring-purple-500 focus:border-purple-500 sm:text-sm placeholder-slate-600"
+                          placeholder="Reason for top-up..."
+                        />
                       </div>
                     </div>
                   </div>
@@ -754,6 +780,7 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
                           <tr>
                             <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Date</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Type</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Note</th>
                             <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Amount</th>
                             <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase">Status</th>
                           </tr>
@@ -781,6 +808,9 @@ const Borrowers: React.FC<BorrowersProps> = ({ borrowers, onAdd, onEdit, onDelet
                                       Payment
                                     </span>
                                   )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-slate-400 max-w-xs truncate" title={h.note}>
+                                  {h.note || '-'}
                                 </td>
                                 <td className={`px-4 py-3 text-sm text-right font-medium ${h.type === 'loan' ? 'text-white' : 'text-green-400'}`}>
                                   {h.type === 'loan' ? '+' : '+'}₹{h.amount}

@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, runTransaction, arrayRemove } from 'firebase/firestore';
 import { Borrower } from '../types';
 
 const COLLECTION_NAME = 'borrowers';
@@ -89,6 +89,44 @@ export const topUpLoan = async (id: string, amount: number, note?: string) => {
             totalPayable: newTotalPayable,
             status: newStatus,
             history: [...(borrower.history || []), newHistoryItem]
+        });
+    });
+};
+
+export const deleteHistoryItem = async (borrowerId: string, historyItemId: string): Promise<void> => {
+    await runTransaction(db, async (transaction) => {
+        const docRef = doc(db, COLLECTION_NAME, borrowerId);
+        const sfDoc = await transaction.get(docRef);
+
+        if (!sfDoc.exists()) throw new Error('Borrower does not exist!');
+
+        const borrower = sfDoc.data() as Borrower;
+        const item = borrower.history.find(h => h.id === historyItemId);
+
+        if (!item) throw new Error('History item not found!');
+
+        const newHistory = borrower.history.filter(h => h.id !== historyItemId);
+
+        let newRepaidAmount = borrower.repaidAmount || 0;
+        let newLoanAmount = borrower.loanAmount || 0;
+        let newTotalPayable = borrower.totalPayable || 0;
+
+        if (item.type === 'payment') {
+            newRepaidAmount = Math.max(0, newRepaidAmount - item.amount);
+        } else if (item.type === 'loan') {
+            newLoanAmount = Math.max(0, newLoanAmount - item.amount);
+            newTotalPayable = Math.max(0, newTotalPayable - item.amount);
+        }
+
+        const newStatus: 'Active' | 'Completed' =
+            newRepaidAmount >= newTotalPayable && newTotalPayable > 0 ? 'Completed' : 'Active';
+
+        transaction.update(docRef, {
+            history: newHistory,
+            repaidAmount: newRepaidAmount,
+            loanAmount: newLoanAmount,
+            totalPayable: newTotalPayable,
+            status: newStatus,
         });
     });
 };

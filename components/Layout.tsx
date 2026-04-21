@@ -6,7 +6,7 @@ import {
   LogOut,
   Menu,
   X,
-  BadgeDollarSign
+  TrendingUp,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -27,78 +27,123 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
     { name: 'Borrowers', icon: Users, path: '/borrowers' },
   ];
 
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
-    <div className="flex h-screen overflow-hidden text-slate-200">
-      {/* Mobile Sidebar Overlay */}
+    <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-200">
+
+      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden"
+          onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-slate-900/50 backdrop-blur-xl border-r border-white/10 text-white transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-30 w-64 flex flex-col
+          bg-zinc-900 border-r border-zinc-800/80
+          transform transition-transform duration-300 ease-in-out
           md:relative md:translate-x-0
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div className="flex items-center space-x-2">
-            <BadgeDollarSign className="w-8 h-8 text-blue-500" />
-            <span className="text-xl font-bold tracking-wide text-slate-100">SKS Lending</span>
+        {/* Logo */}
+        <div className="flex items-center justify-between px-5 py-5 border-b border-zinc-800/80">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center">
+              <TrendingUp size={18} className="text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-zinc-100 leading-none">SKS DM Lending</p>
+              <p className="text-[10px] text-zinc-500 mt-0.5 leading-none">Management System</p>
+            </div>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white">
-            <X size={24} />
+          <button
+            onClick={closeSidebar}
+            className="md:hidden p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 mt-4">
+        {/* Nav Label */}
+        <div className="px-5 pt-5 pb-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Navigation</p>
+        </div>
+
+        {/* Nav Items */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={() => setIsSidebarOpen(false)}
+              end={item.path === '/'}
+              onClick={closeSidebar}
               className={({ isActive }) => `
-                flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
+                flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium
+                transition-all duration-200
                 ${isActive
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'}
+                  ? 'bg-emerald-600/15 text-emerald-400 border border-emerald-500/20 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/70'
+                }
               `}
             >
-              <item.icon size={20} />
-              <span className="font-medium">{item.name}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={18} className={isActive ? 'text-emerald-400' : 'text-zinc-500'} />
+                  <span>{item.name}</span>
+                  {isActive && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        {/* Logout & Footer */}
+        <div className="p-3 border-t border-zinc-800/80 space-y-3">
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-3 px-4 py-3 w-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl
+              text-sm font-medium text-zinc-500 hover:text-red-400
+              hover:bg-red-500/8 transition-all duration-200 group"
           >
-            <LogOut size={20} />
-            <span className="font-medium">Sign Out</span>
+            <LogOut size={18} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
+            <span>Sign Out</span>
           </button>
+          
+          <div className="px-4 py-2">
+            <p className="text-[10px] font-medium text-zinc-600 text-center">
+              A sub-product of SKS DM
+            </p>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="bg-slate-900/50 backdrop-blur-xl border-b border-white/10 shadow-sm md:hidden flex items-center justify-between p-4 z-10">
-          <div className="flex items-center space-x-2">
-            <BadgeDollarSign className="w-6 h-6 text-blue-500" />
-            <span className="font-bold text-slate-100">SKS Lending</span>
+        <header className="md:hidden flex items-center justify-between px-4 py-3.5 bg-zinc-900 border-b border-zinc-800/80 z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center">
+              <TrendingUp size={14} className="text-emerald-400" />
+            </div>
+            <span className="font-bold text-zinc-100 text-sm">SKS DM Lending</span>
           </div>
-          <button onClick={() => setIsSidebarOpen(true)} className="text-slate-400 hover:text-white">
-            <Menu size={24} />
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+          >
+            <Menu size={20} />
           </button>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8">
+        {/* Page Content */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-zinc-950 p-4 md:p-7">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

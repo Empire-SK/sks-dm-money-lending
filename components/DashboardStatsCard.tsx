@@ -6,27 +6,55 @@ interface DashboardStatsCardProps {
   value: string | number;
   icon: LucideIcon;
   trend?: string;
-  color: 'blue' | 'green' | 'yellow' | 'purple';
+  accent: 'emerald' | 'amber' | 'violet' | 'sky';
 }
 
-const colorMap = {
-  blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  green: 'bg-green-500/10 text-green-400 border-green-500/20',
-  yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+const accentMap = {
+  emerald: {
+    icon: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    value: 'text-emerald-400',
+    glow: 'before:bg-emerald-500/5',
+  },
+  amber: {
+    icon: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    value: 'text-amber-400',
+    glow: 'before:bg-amber-500/5',
+  },
+  violet: {
+    icon: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+    value: 'text-violet-400',
+    glow: 'before:bg-violet-500/5',
+  },
+  sky: {
+    icon: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+    value: 'text-sky-400',
+    glow: 'before:bg-sky-500/5',
+  },
 };
 
-const DashboardStatsCard: React.FC<DashboardStatsCardProps> = ({ title, value, icon: Icon, color, trend }) => {
+const DashboardStatsCard: React.FC<DashboardStatsCardProps> = ({ title, value, icon: Icon, accent, trend }) => {
+  const colors = accentMap[accent];
+
   return (
-    <div className="bg-slate-900/40 backdrop-blur-md rounded-xl p-6 shadow-sm border border-white/5 transition-all hover:border-white/10 hover:shadow-lg hover:bg-slate-900/60">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-400">{title}</p>
-          <h3 className="text-2xl font-bold text-white mt-1">{value}</h3>
-          {trend && <p className="text-xs text-slate-500 mt-1">{trend}</p>}
+    <div className="relative glass-card p-5 overflow-hidden group hover:border-zinc-700/80 transition-all duration-300">
+      {/* Subtle top accent line */}
+      <div className={`absolute top-0 left-0 right-0 h-px ${
+        accent === 'emerald' ? 'bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent' :
+        accent === 'amber' ? 'bg-gradient-to-r from-transparent via-amber-500/40 to-transparent' :
+        accent === 'violet' ? 'bg-gradient-to-r from-transparent via-violet-500/40 to-transparent' :
+        'bg-gradient-to-r from-transparent via-sky-500/40 to-transparent'
+      }`} />
+
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">{title}</p>
+          <p className={`text-2xl font-bold mt-2 ${colors.value} tabular-nums`}>{value}</p>
+          {trend && (
+            <p className="text-xs text-zinc-600 mt-1.5 truncate">{trend}</p>
+          )}
         </div>
-        <div className={`p-3 rounded-lg border ${colorMap[color]}`}>
-          <Icon size={24} />
+        <div className={`p-2.5 rounded-xl border flex-shrink-0 ml-3 ${colors.icon}`}>
+          <Icon size={20} />
         </div>
       </div>
     </div>

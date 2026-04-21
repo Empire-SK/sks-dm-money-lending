@@ -1,5 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <rect width="100" height="100" rx="20" fill="#3b82f6"/>
-  <path d="M50 20C33.4315 20 20 33.4315 20 50C20 66.5685 33.4315 80 50 80C66.5685 80 80 66.5685 80 50C80 33.4315 66.5685 20 50 20ZM50 72C37.8497 72 28 62.1503 28 50C28 37.8497 37.8497 28 50 28C62.1503 28 72 37.8497 72 50C72 62.1503 62.1503 72 50 72Z" fill="white" fill-opacity="0.2"/>
-  <path d="M54.5 35H45.5V39H44C40.6863 39 38 41.6863 38 45V47C38 50.3137 40.6863 53 44 53H54V57H38V61H40H44H54.5V65H45.5V61H56C59.3137 61 62 58.3137 62 55V53C62 49.6863 59.3137 47 56 47H46V43H62V39H54.5V35Z" fill="white"/>
+  <!-- Rounded zinc background -->
+  <rect width="100" height="100" rx="30" fill="#09090b"/>
+  <!-- Subtle emerald border glow -->
+  <rect x="2" y="2" width="96" height="96" rx="28" stroke="#10b981" stroke-width="4" stroke-opacity="0.2"/>
+  
+  <!-- Trending Up Path (Growth Arrow) -->
+  <path d="M75 35L47.5 62.5L32.5 47.5L15 65" stroke="#10b981" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M55 35H75V55" stroke="#10b981" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

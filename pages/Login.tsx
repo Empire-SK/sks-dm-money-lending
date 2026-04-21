@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BadgeDollarSign, ArrowRight, Wallet, ShieldCheck, Lock } from 'lucide-react';
+import { ArrowRight, Lock, Mail, TrendingUp, ShieldCheck } from 'lucide-react';
 import { login } from '../services/authService';
 
 const Login: React.FC = () => {
@@ -16,45 +16,52 @@ const Login: React.FC = () => {
       await login(email, password);
     } catch (err: any) {
       console.error(err);
-      setError('Invalid email or password.');
+      setError('Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full relative flex items-center justify-center overflow-hidden bg-slate-950">
-      {/* Background Effects */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1639322537228-ad7113658348?q=80&w=2548&auto=format&fit=crop')] bg-cover bg-center opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-900/40" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 relative overflow-hidden p-4">
 
-        {/* Animated Blobs */}
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse delay-1000" />
+      {/* Ambient background orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-600/6 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-600/4 rounded-full blur-[120px]" />
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+          }}
+        />
       </div>
 
-      {/* Main Card */}
-      <div className="relative z-10 w-full max-w-md p-6">
-        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden">
-
-          {/* Header */}
-          <div className="px-8 pt-8 pb-6 text-center border-b border-slate-700/50 bg-slate-800/20">
-            <div className="mx-auto w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4 transform rotate-3 hover:rotate-0 transition-transform duration-300">
-              <BadgeDollarSign className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">SKS Lending</h2>
-            <p className="mt-2 text-sm text-slate-400">Secure Creditor Dashboard</p>
+      <div className="relative w-full max-w-sm">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-600/15 border border-emerald-500/25
+            flex items-center justify-center mb-5 shadow-lg shadow-emerald-900/20">
+            <TrendingUp className="w-7 h-7 text-emerald-400" />
           </div>
+          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">SKS DM Lending</h1>
+          <p className="mt-1.5 text-sm text-zinc-500">Sign in to your dashboard</p>
+        </div>
 
-          {/* Form */}
-          <div className="p-8">
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-300 uppercase tracking-wider ml-1">Email Address</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Wallet className="h-5 w-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+        {/* Card */}
+        <div className="glass-card shadow-2xl shadow-black/60 overflow-hidden">
+          <div className="p-6">
+            <form className="space-y-4" onSubmit={handleSubmit}>
+
+              {/* Email */}
+              <div>
+                <label className="label-base">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail className="h-4 w-4 text-zinc-600" />
                   </div>
                   <input
                     type="email"
@@ -62,16 +69,17 @@ const Login: React.FC = () => {
                     placeholder="admin@sksdm.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 bg-slate-950/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    className="input-base pl-10"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-300 uppercase tracking-wider ml-1">Password</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+              {/* Password */}
+              <div>
+                <label className="label-base">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="h-4 w-4 text-zinc-600" />
                   </div>
                   <input
                     type="password"
@@ -79,41 +87,44 @@ const Login: React.FC = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 bg-slate-950/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    className="input-base pl-10"
                   />
                 </div>
               </div>
 
+              {/* Error */}
               {error && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-red-500 flex-shrink-0" />
-                  <p className="text-sm text-red-400 font-medium">{error}</p>
+                <div className="p-3 rounded-xl bg-red-500/8 border border-red-500/20 flex items-start gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 p-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                className="btn-primary w-full mt-2 py-3"
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none" />
-                <span className="relative flex items-center justify-center gap-2">
-                  {loading ? 'Authenticating...' : (
-                    <>
-                      Access Dashboard
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </span>
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Authenticating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Access Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </form>
           </div>
 
           {/* Footer */}
-          <div className="px-8 pb-6 text-center">
-            <p className="text-xs text-slate-500">
-              Protected by secure 256-bit encryption. <br />
-              &copy; {new Date().getFullYear()} SKS Services.
+          <div className="px-6 py-4 bg-zinc-950/40 border-t border-zinc-800/80 text-center">
+            <p className="text-xs text-zinc-600">
+              Secured with end-to-end encryption &middot; &copy; {new Date().getFullYear()} SKS Services
             </p>
           </div>
         </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Plus, Search, Edit2, Trash2, DollarSign, Phone,
   PlusCircle, FileText, Download, FileDown, Clock,
-  Share2, CheckCircle, X, TrendingUp, TrendingDown
+  Share2, CheckCircle, X, TrendingUp, TrendingDown, Filter
 } from 'lucide-react';
 import { Borrower } from '../types';
 
@@ -82,6 +82,8 @@ const Borrowers: React.FC<BorrowersProps> = ({
   const [repayingId, setRepayingId] = useState<string | null>(null);
   const [topUpId, setTopUpId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  type SortOption = 'recent_activity' | 'highest_pending' | 'status' | 'name';
+  const [sortBy, setSortBy] = useState<SortOption>('recent_activity');
 
   /* ── Form State ── */
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', loanAmount: '', startDate: '', note: '' });
@@ -99,6 +101,31 @@ const Borrowers: React.FC<BorrowersProps> = ({
     (b.note && b.note.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const sortedBorrowers = [...filteredBorrowers].sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name);
+    }
+    if (sortBy === 'recent_activity') {
+      const latestA = a.history.length > 0 
+        ? Math.max(...a.history.map(h => new Date(h.date).getTime())) 
+        : new Date(a.startDate).getTime();
+      const latestB = b.history.length > 0 
+        ? Math.max(...b.history.map(h => new Date(h.date).getTime())) 
+        : new Date(b.startDate).getTime();
+      return latestB - latestA;
+    }
+    if (sortBy === 'highest_pending') {
+      const pendingA = a.totalPayable - a.repaidAmount;
+      const pendingB = b.totalPayable - b.repaidAmount;
+      return pendingB - pendingA;
+    }
+    if (sortBy === 'status') {
+      if (a.status === b.status) return 0;
+      return a.status === 'Active' ? -1 : 1;
+    }
+    return 0;
+  });
+
   /* ── Handlers ── */
   const handleOpenHistory = (b: Borrower) => { setHistoryBorrowerId(b.id); setIsHistoryOpen(true); };
 
@@ -112,7 +139,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
   const handleDownloadCSV = () => {
     const headers = ['Name', 'Phone', 'Email', 'Start Date', 'Lent Amount', 'Repaid Amount', 'Outstanding', 'Status', 'Note'];
-    const rows = filteredBorrowers.map(b => [
+    const rows = sortedBorrowers.map(b => [
       `"${b.name}"`, `"${b.phone}"`, `"${b.email}"`, `"${b.startDate}"`,
       b.loanAmount, b.repaidAmount, b.totalPayable - b.repaidAmount,
       `"${b.status}"`, `"${(b.note || '').replace(/"/g, '""')}"`
@@ -217,23 +244,40 @@ const Borrowers: React.FC<BorrowersProps> = ({
         </div>
       </div>
 
-      {/* ── Search ── */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-          <Search size={15} className="text-zinc-600" />
+      {/* ── Search & Filter ── */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Search size={15} className="text-zinc-600" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by name, phone or note..."
+            className="input-base pl-10 w-full"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-600 hover:text-zinc-400">
+              <X size={15} />
+            </button>
+          )}
         </div>
-        <input
-          type="text"
-          placeholder="Search by name, phone or note..."
-          className="input-base pl-10 w-full"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        {searchTerm && (
-          <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-600 hover:text-zinc-400">
-            <X size={15} />
-          </button>
-        )}
+        <div className="relative sm:w-56 flex-shrink-0">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Filter size={15} className="text-zinc-600" />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="input-base pl-10 w-full appearance-none cursor-pointer bg-zinc-900/60 text-sm"
+          >
+            <option value="recent_activity">Recent Activity First</option>
+            <option value="highest_pending">Highest Pending First</option>
+            <option value="status">Active Status First</option>
+            <option value="name">Name (A-Z)</option>
+          </select>
+        </div>
       </div>
 
       {/* ── Desktop Table ── */}
@@ -248,7 +292,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
-              {filteredBorrowers.map((borrower) => {
+              {sortedBorrowers.map((borrower) => {
                 const pct = Math.min(100, borrower.totalPayable > 0 ? (borrower.repaidAmount / borrower.totalPayable) * 100 : 0);
                 const remaining = borrower.totalPayable - borrower.repaidAmount;
 
@@ -313,7 +357,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
                   </tr>
                 );
               })}
-              {filteredBorrowers.length === 0 && (
+              {sortedBorrowers.length === 0 && (
                 <tr><td colSpan={5} className="px-5 py-14 text-center text-zinc-600 text-sm">
                   {searchTerm ? `No results for "${searchTerm}"` : 'No borrowers yet. Add your first one!'}
                 </td></tr>
@@ -325,7 +369,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
       {/* ── Mobile Cards ── */}
       <div className="md:hidden space-y-3">
-        {filteredBorrowers.map((borrower) => {
+        {sortedBorrowers.map((borrower) => {
           const pct = Math.min(100, borrower.totalPayable > 0 ? (borrower.repaidAmount / borrower.totalPayable) * 100 : 0);
           const remaining = borrower.totalPayable - borrower.repaidAmount;
 
@@ -414,7 +458,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
           );
         })}
 
-        {filteredBorrowers.length === 0 && (
+        {sortedBorrowers.length === 0 && (
           <div className="glass-card-sm py-14 text-center">
             <p className="text-zinc-600 text-sm">
               {searchTerm ? `No results for "${searchTerm}"` : 'No borrowers yet. Add your first one!'}

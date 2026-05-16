@@ -83,7 +83,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
   const [topUpId, setTopUpId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   type SortOption = 'recent_activity' | 'highest_pending' | 'status' | 'name';
-  const [sortBy, setSortBy] = useState<SortOption>('recent_activity');
+  const [sortBy, setSortBy] = useState<SortOption>('highest_pending');
 
   /* ── Form State ── */
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', loanAmount: '', startDate: '', note: '' });

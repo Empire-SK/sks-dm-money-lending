@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Users, CreditCard, Wallet, AlertCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Users, CreditCard, Wallet, AlertCircle, Trophy } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -38,7 +38,17 @@ const tooltipItemStyle = {
 
 const PIE_COLORS = ['#10b981', '#f59e0b'];
 
+const AVATAR_COLORS = [
+  'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+  'bg-violet-500/15 text-violet-400 border-violet-500/25',
+  'bg-sky-500/15 text-sky-400 border-sky-500/25',
+  'bg-amber-500/15 text-amber-400 border-amber-500/25',
+  'bg-rose-500/15 text-rose-400 border-rose-500/25',
+];
+const getAvatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+
 const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
+  const [leaderboardCategory, setLeaderboardCategory] = useState<'pending' | 'loan' | 'repaid'>('pending');
   const stats = useMemo(() => {
     return borrowers.reduce(
       (acc, curr) => {
@@ -71,6 +81,25 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
   const recoveryRate = stats.totalLent > 0
     ? Math.round((stats.totalRepaid / stats.totalLent) * 100)
     : 0;
+
+  const activeBorrowers = useMemo(() => borrowers.filter(b => b.status === 'Active'), [borrowers]);
+
+  const topBorrowers = useMemo(() => {
+    return [...activeBorrowers].sort((a, b) => {
+      if (leaderboardCategory === 'pending') {
+        const pA = a.totalPayable - a.repaidAmount;
+        const pB = b.totalPayable - b.repaidAmount;
+        return pB - pA;
+      }
+      if (leaderboardCategory === 'loan') {
+        return b.loanAmount - a.loanAmount;
+      }
+      if (leaderboardCategory === 'repaid') {
+        return b.repaidAmount - a.repaidAmount;
+      }
+      return 0;
+    }).slice(0, 5);
+  }, [activeBorrowers, leaderboardCategory]);
 
   return (
     <div className="space-y-6 animate-[fadeIn_0.3s_ease]">
@@ -225,6 +254,68 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Leaderboard */}
+      <div className="glass-card p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+              <Trophy size={16} className="text-amber-400" />
+              Active Borrowers Leaderboard
+            </h3>
+            <p className="text-xs text-zinc-600 mt-0.5">Top 5 by category</p>
+          </div>
+          <div className="flex gap-2 bg-zinc-900/60 p-1 rounded-xl border border-zinc-800/60">
+            {(['pending', 'loan', 'repaid'] as const).map(cat => (
+              <button
+                key={cat}
+                onClick={() => setLeaderboardCategory(cat)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  leaderboardCategory === cat 
+                    ? 'bg-zinc-800 text-zinc-200 border border-zinc-700 shadow-sm' 
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                }`}
+              >
+                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {topBorrowers.length > 0 ? topBorrowers.map((b, idx) => {
+            const value = leaderboardCategory === 'pending' 
+              ? b.totalPayable - b.repaidAmount
+              : leaderboardCategory === 'loan' ? b.loanAmount : b.repaidAmount;
+            
+            return (
+              <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/40 hover:bg-zinc-900/60 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-6 text-center text-xs font-bold ${idx === 0 ? 'text-amber-400 text-sm' : idx === 1 ? 'text-zinc-300' : idx === 2 ? 'text-amber-600' : 'text-zinc-600'}`}>
+                    #{idx + 1}
+                  </div>
+                  <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs flex-shrink-0 ${getAvatarColor(b.name)}`}>
+                    {b.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200">{b.name}</p>
+                    <p className="text-xs text-zinc-600">{b.phone}</p>
+                  </div>
+                </div>
+                <div className={`text-sm font-bold ${
+                  leaderboardCategory === 'pending' ? 'text-amber-400' 
+                  : leaderboardCategory === 'loan' ? 'text-zinc-200' 
+                  : 'text-emerald-400'
+                }`}>
+                  ₹{value.toLocaleString('en-IN')}
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="py-6 text-center text-sm text-zinc-600">No active borrowers found.</div>
+          )}
         </div>
       </div>
     </div>

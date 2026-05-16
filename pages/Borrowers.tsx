@@ -286,7 +286,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-zinc-800/80 bg-zinc-900/40">
-                {['Borrower', 'Loan Amount', 'Repayment Progress', 'Status', 'Actions'].map((h) => (
+                {['Borrower', 'Loan Amount', 'Pending Amount', 'Repayment Progress', 'Status', 'Actions'].map((h) => (
                   <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -317,6 +317,9 @@ const Borrowers: React.FC<BorrowersProps> = ({
                       <p className="text-xs text-zinc-600 mt-0.5">
                         Since {new Date(borrower.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-bold text-amber-400">₹{remaining.toLocaleString('en-IN')}</p>
                     </td>
                     <td className="px-5 py-4">
                       <div className="w-40">
@@ -358,7 +361,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
                 );
               })}
               {sortedBorrowers.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-14 text-center text-zinc-600 text-sm">
+                <tr><td colSpan={6} className="px-5 py-14 text-center text-zinc-600 text-sm">
                   {searchTerm ? `No results for "${searchTerm}"` : 'No borrowers yet. Add your first one!'}
                 </td></tr>
               )}
@@ -398,7 +401,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
                 {[
                   { label: 'Lent', val: `₹${borrower.loanAmount.toLocaleString('en-IN')}`, color: 'text-zinc-100' },
                   { label: 'Repaid', val: `₹${borrower.repaidAmount.toLocaleString('en-IN')}`, color: 'text-emerald-400' },
-                  { label: 'Due', val: `₹${remaining.toLocaleString('en-IN')}`, color: 'text-amber-400' },
+                  { label: 'Pending', val: `₹${remaining.toLocaleString('en-IN')}`, color: 'text-amber-400' },
                 ].map(s => (
                   <div key={s.label} className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-2.5 text-center">
                     <p className="text-[10px] text-zinc-600 uppercase tracking-wider">{s.label}</p>

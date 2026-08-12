@@ -160,10 +160,10 @@ const Borrowers: React.FC<BorrowersProps> = ({
       `"Status","${b.status}"`, `"Note","${(b.note || '').replace(/"/g, '""')}"`
     ];
     const histRows = b.history.map(h =>
-      `"${new Date(h.date).toLocaleDateString()}","${h.type === 'loan' ? 'Top Up' : 'Payment'}","${h.amount}"`
+      `"${new Date(h.date).toLocaleDateString()}","${h.type === 'loan' ? 'Top Up' : 'Payment'}","${h.amount}","${(h.note || '').replace(/"/g, '""')}"`
     );
     const csv = ['--- Borrower Details ---', ...rows, '', '--- Payment History ---',
-      '"Date","Type","Amount"', ...histRows].join('\n');
+      '"Date","Type","Amount","Note"', ...histRows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

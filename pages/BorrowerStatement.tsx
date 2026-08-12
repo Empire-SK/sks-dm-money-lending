@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBorrower } from '../services/firestoreService';
 import { Borrower } from '../types';
-import { Phone, CheckCircle, Clock, AlertCircle, FileDown, Printer, TrendingDown, TrendingUp, Mail } from 'lucide-react';
+import { Phone, CheckCircle, Clock, AlertCircle, FileDown, Printer, TrendingDown, TrendingUp, Mail, FileText } from 'lucide-react';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 
@@ -82,16 +82,17 @@ const BorrowerStatement: React.FC = () => {
             `"Total Lent Amount","${borrower.loanAmount}"`,
             `"Total Repaid Amount","${borrower.repaidAmount}"`,
             `"Outstanding Balance","${remaining}"`,
-            `"Current Status","${borrower.status}"`
+            `"Current Status","${borrower.status}"`,
+            `"Note","${(borrower.note || '').replace(/"/g, '""')}"`
         ];
         const historyRows = borrower.history.map(h =>
-            `"${new Date(h.date).toLocaleDateString()}","${h.type === 'loan' ? 'Top Up' : 'Payment'}","${h.amount}","${h.type === 'loan' ? 'Disbursed' : 'Success'}"`
+            `"${new Date(h.date).toLocaleDateString()}","${h.type === 'loan' ? 'Top Up' : 'Payment'}","${h.amount}","${(h.note || '').replace(/"/g, '""')}","${h.type === 'loan' ? 'Disbursed' : 'Success'}"`
         );
         const csvContent = [
             '--- Borrower Statement ---',
             ...summaryRows, '',
             '--- Transaction History ---',
-            '"Payment Date","Type","Amount","Status"',
+            '"Payment Date","Type","Amount","Note","Status"',
             ...historyRows
         ].join('\n');
 
@@ -147,6 +148,12 @@ const BorrowerStatement: React.FC = () => {
                                         </span>
                                     )}
                                 </div>
+                                {borrower.note && (
+                                    <div className="flex items-start gap-1.5 text-xs text-zinc-400 italic bg-zinc-950/40 border border-zinc-800/60 rounded-lg px-3 py-1.5 mt-3 max-w-md">
+                                        <FileText size={12} className="text-zinc-500 flex-shrink-0 mt-0.5" />
+                                        <span>{borrower.note}</span>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex items-center gap-2">
                                 {/* Action Buttons */}
@@ -215,10 +222,12 @@ const BorrowerStatement: React.FC = () => {
                 {/* ── Transaction History ── */}
                 <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/40">
                     <div className="h-px bg-gradient-to-r from-transparent via-zinc-700/40 to-transparent" />
-                    <div className="px-6 py-4 border-b border-zinc-800/80 flex items-center gap-2">
-                        <Clock size={16} className="text-zinc-500" />
-                        <h2 className="text-sm font-semibold text-zinc-200">Transaction History</h2>
-                        <span className="ml-auto text-xs text-zinc-600">{borrower.history.length} records</span>
+                    <div className="px-5 md:px-6 py-4 border-b border-zinc-800/80 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Clock size={16} className="text-zinc-500" />
+                            <h2 className="text-sm font-semibold text-zinc-200">Transaction History</h2>
+                        </div>
+                        <span className="text-xs text-zinc-500 font-medium">{borrower.history.length} records</span>
                     </div>
 
                     {borrower.history.length === 0 ? (
@@ -226,54 +235,118 @@ const BorrowerStatement: React.FC = () => {
                             <p className="text-sm text-zinc-600">No transactions recorded yet.</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full">
-                                <thead className="bg-zinc-950/40 border-b border-zinc-800/60">
-                                    <tr>
-                                        {['Date', 'Type', 'Amount', 'Status'].map(h => (
-                                            <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold text-zinc-600 uppercase tracking-wider">
-                                                {h}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-zinc-800/60">
-                                    {[...borrower.history]
-                                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                                        .map((payment) => (
-                                            <tr key={payment.id} className="hover:bg-zinc-800/20 transition-colors">
-                                                <td className="px-5 py-4">
-                                                    <p className="text-sm text-zinc-200">
-                                                        {new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                                    </p>
-                                                    <p className="text-xs text-zinc-600 mt-0.5">
-                                                        {new Date(payment.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                                                    </p>
-                                                </td>
-                                                <td className="px-5 py-4">
+                        <>
+                            {/* Mobile Card / Box View (No horizontal scroll) */}
+                            <div className="md:hidden p-4 space-y-3">
+                                {[...borrower.history]
+                                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                    .map((payment) => (
+                                        <div
+                                            key={payment.id}
+                                            className="bg-zinc-950/60 border border-zinc-800/70 rounded-xl p-3.5 space-y-2.5 hover:border-zinc-700/60 transition-colors"
+                                        >
+                                            {/* Card Top Row: Type & Amount */}
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
                                                     {payment.type === 'loan' ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                                                            <TrendingUp size={10} /> Top Up
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                                            <TrendingUp size={11} /> Top Up
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                            <TrendingDown size={10} /> Payment
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                            <TrendingDown size={11} /> Payment
                                                         </span>
                                                     )}
-                                                </td>
-                                                <td className={`px-5 py-4 text-sm font-semibold ${payment.type === 'loan' ? 'text-violet-400' : 'text-emerald-400'}`}>
-                                                    +₹{payment.amount.toLocaleString('en-IN')}
-                                                </td>
-                                                <td className="px-5 py-4">
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                        <CheckCircle size={10} /> Success
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/40">
+                                                        <CheckCircle size={9} className="text-emerald-400" /> Success
                                                     </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                                </div>
+                                                <span className={`text-base font-bold ${payment.type === 'loan' ? 'text-violet-400' : 'text-emerald-400'}`}>
+                                                    +₹{payment.amount.toLocaleString('en-IN')}
+                                                </span>
+                                            </div>
+
+                                            {/* Card Middle Row: Date & Time */}
+                                            <div className="flex items-center justify-between text-xs text-zinc-500 pt-0.5">
+                                                <span>
+                                                    {new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </span>
+                                                <span>
+                                                    {new Date(payment.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+
+                                            {/* Card Bottom Row: Note (if present) */}
+                                            {payment.note && (
+                                                <div className="flex items-start gap-1.5 text-xs text-zinc-300 bg-zinc-900/80 border border-zinc-800/80 rounded-lg px-2.5 py-2">
+                                                    <FileText size={12} className="text-zinc-500 flex-shrink-0 mt-0.5" />
+                                                    <span className="break-words leading-relaxed">{payment.note}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="min-w-full">
+                                    <thead className="bg-zinc-950/40 border-b border-zinc-800/60">
+                                        <tr>
+                                            {['Date', 'Type', 'Amount', 'Note', 'Status'].map(h => (
+                                                <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold text-zinc-600 uppercase tracking-wider">
+                                                    {h}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-800/60">
+                                        {[...borrower.history]
+                                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                            .map((payment) => (
+                                                <tr key={payment.id} className="hover:bg-zinc-800/20 transition-colors">
+                                                    <td className="px-5 py-4">
+                                                        <p className="text-sm text-zinc-200 font-medium">
+                                                            {new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                        </p>
+                                                        <p className="text-xs text-zinc-600 mt-0.5">
+                                                            {new Date(payment.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        {payment.type === 'loan' ? (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                                                <TrendingUp size={10} /> Top Up
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                                <TrendingDown size={10} /> Payment
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                    <td className={`px-5 py-4 text-sm font-semibold ${payment.type === 'loan' ? 'text-violet-400' : 'text-emerald-400'}`}>
+                                                        +₹{payment.amount.toLocaleString('en-IN')}
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        {payment.note ? (
+                                                            <div className="flex items-start gap-1.5 text-xs text-zinc-300 max-w-[220px]">
+                                                                <FileText size={12} className="text-zinc-500 flex-shrink-0 mt-0.5" />
+                                                                <span className="break-words leading-relaxed">{payment.note}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-zinc-600">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-5 py-4">
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                            <CheckCircle size={10} /> Success
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
                     )}
                 </div>
 

@@ -113,7 +113,7 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
       setIsSubmitting(true);
 
       const payload = {
-        userId: currentUser?.uid || 'default',
+        userId: currentUser?.uid || '',
         monthYear,
         baseSalary: baseNum,
         bonus: parseIndianNumber(bonus),

@@ -63,7 +63,14 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
-    try { await logout(); } catch (error) { console.error('Logout failed:', error); }
+    try {
+      await logout();
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      setBorrowers([]);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const handleAddBorrower = async (newBorrowerData: Omit<Borrower, 'id' | 'repaidAmount' | 'status' | 'history'>) => {
@@ -176,7 +183,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <ExpenseProvider>
+      <ExpenseProvider key={currentUser?.uid || 'guest'}>
         <HashRouter>
           <Routes>
             <Route path="/login" element={

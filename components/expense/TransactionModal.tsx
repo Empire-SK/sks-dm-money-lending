@@ -135,7 +135,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     try {
       setIsUploading(true);
       setError('');
-      const uid = currentUser?.uid || 'default';
+      const uid = currentUser?.uid || '';
       const result = await uploadReceiptFile(uid, file);
       setReceiptUrl(result.url);
       setReceiptName(result.fileName);
@@ -192,7 +192,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           : (categoryId || activeCategories[0]?.id || 'cat_default_1');
 
       const txPayload = {
-        userId: currentUser?.uid || 'default',
+        userId: currentUser?.uid || '',
         type,
         title: title.trim() || (type === 'transfer' && transferCategory === 'savings' ? 'Savings' : `${type.charAt(0).toUpperCase() + type.slice(1)} transaction`),
         amount: numAmount,

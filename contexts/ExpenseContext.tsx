@@ -99,11 +99,15 @@ const getCurrentMonthYear = () => {
 
 export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
-  const userId = currentUser?.uid || 'default';
+  const userId = currentUser?.uid || '';
+  const userEmail = currentUser?.email || '';
 
-  // Always pre-populate accounts and categories so dropdowns are NEVER empty!
-  const [accounts, setAccounts] = useState<ExpenseAccount[]>(() => getInitializedDefaultAccounts(userId));
-  const [categories, setCategories] = useState<ExpenseCategory[]>(() => getInitializedDefaultCategories(userId));
+  const [accounts, setAccounts] = useState<ExpenseAccount[]>(() =>
+    userId ? getInitializedDefaultAccounts(userId) : []
+  );
+  const [categories, setCategories] = useState<ExpenseCategory[]>(() =>
+    userId ? getInitializedDefaultCategories(userId) : []
+  );
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
   const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
   const [budgets, setBudgets] = useState<MonthlyBudget[]>([]);
@@ -123,50 +127,64 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Fetch all user expense data with resilient individual handling
+  // Fetch all user expense data with isolated multi-tenant handling
   const refreshData = useCallback(async () => {
-    const activeUid = userId || 'default';
+    if (!userId) {
+      setAccounts([]);
+      setCategories([]);
+      setSalaryRecords([]);
+      setTransactions([]);
+      setBudgets([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
 
       const [accsRes, catsRes, salsRes, txsRes, bdgsRes] = await Promise.allSettled([
-        getExpenseAccounts(activeUid),
-        getExpenseCategories(activeUid),
-        getSalaryRecords(activeUid),
-        getExpenseTransactions(activeUid),
-        getMonthlyBudgets(activeUid),
+        getExpenseAccounts(userId, userEmail),
+        getExpenseCategories(userId, userEmail),
+        getSalaryRecords(userId, userEmail),
+        getExpenseTransactions(userId, userEmail),
+        getMonthlyBudgets(userId, userEmail),
       ]);
 
       if (accsRes.status === 'fulfilled' && accsRes.value.length > 0) {
         setAccounts(accsRes.value);
       } else {
-        setAccounts((prev) => (prev.length > 0 ? prev : getInitializedDefaultAccounts(activeUid)));
+        setAccounts(getInitializedDefaultAccounts(userId));
       }
 
       if (catsRes.status === 'fulfilled' && catsRes.value.length > 0) {
         setCategories(catsRes.value);
       } else {
-        setCategories((prev) => (prev.length > 0 ? prev : getInitializedDefaultCategories(activeUid)));
+        setCategories(getInitializedDefaultCategories(userId));
       }
 
       if (salsRes.status === 'fulfilled') {
         setSalaryRecords(salsRes.value);
+      } else {
+        setSalaryRecords([]);
       }
 
       if (txsRes.status === 'fulfilled') {
         setTransactions(txsRes.value);
+      } else {
+        setTransactions([]);
       }
 
       if (bdgsRes.status === 'fulfilled') {
         setBudgets(bdgsRes.value);
+      } else {
+        setBudgets([]);
       }
     } catch (err: any) {
       console.warn('Failed to load expense data, preserving defaults:', err);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, userEmail]);
 
   useEffect(() => {
     refreshData();
@@ -196,7 +214,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   /* ── Account Handlers ── */
   const handleAddAccount = async (accData: Omit<ExpenseAccount, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      const created = await addExpenseAccount(accData);
+      const created = await addExpenseAccount({ ...accData, userId }, userEmail);
       setAccounts((prev) => [...prev, created]);
       showToast(`Account "${created.name}" created successfully.`);
     } catch (err: any) {
@@ -208,7 +226,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleEditAccount = async (acc: ExpenseAccount) => {
     try {
-      await updateExpenseAccount(acc);
+      await updateExpenseAccount(acc, userEmail);
       setAccounts((prev) => prev.map((a) => (a.id === acc.id ? acc : a)));
       showToast(`Account "${acc.name}" updated successfully.`);
     } catch (err: any) {
@@ -225,7 +243,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
     try {
-      await deleteExpenseAccount(id);
+      await deleteExpenseAccount(id, userId, userEmail);
       setAccounts((prev) => prev.filter((a) => a.id !== id));
       showToast('Account removed.');
     } catch (err: any) {
@@ -237,7 +255,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   /* ── Category Handlers ── */
   const handleAddCategory = async (catData: Omit<ExpenseCategory, 'id' | 'createdAt'>) => {
     try {
-      const created = await addExpenseCategory(catData);
+      const created = await addExpenseCategory({ ...catData, userId }, userEmail);
       setCategories((prev) => [...prev, created]);
       showToast(`Category "${created.name}" added.`);
     } catch (err: any) {
@@ -249,7 +267,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleEditCategory = async (cat: ExpenseCategory) => {
     try {
-      await updateExpenseCategory(cat);
+      await updateExpenseCategory(cat, userEmail);
       setCategories((prev) => prev.map((c) => (c.id === cat.id ? cat : c)));
       showToast(`Category "${cat.name}" updated.`);
     } catch (err: any) {
@@ -266,7 +284,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
     try {
-      await deleteExpenseCategory(id);
+      await deleteExpenseCategory(id, userId, userEmail);
       setCategories((prev) => prev.filter((c) => c.id !== id));
       showToast('Category deleted.');
     } catch (err: any) {
@@ -286,9 +304,9 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     try {
-      const created = await addSalaryRecord(salData);
+      const created = await addSalaryRecord({ ...salData, userId }, userEmail);
       setSalaryRecords((prev) => [created, ...prev]);
-      const updatedTxs = await getExpenseTransactions(userId);
+      const updatedTxs = await getExpenseTransactions(userId, userEmail);
       setTransactions(updatedTxs);
       showToast(`Salary for ${salData.monthYear} recorded successfully.`);
     } catch (err: any) {
@@ -300,9 +318,9 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleEditSalary = async (sal: SalaryRecord) => {
     try {
-      await updateSalaryRecord(sal);
+      await updateSalaryRecord(sal, userEmail);
       setSalaryRecords((prev) => prev.map((s) => (s.id === sal.id ? sal : s)));
-      const updatedTxs = await getExpenseTransactions(userId);
+      const updatedTxs = await getExpenseTransactions(userId, userEmail);
       setTransactions(updatedTxs);
       showToast(`Salary for ${sal.monthYear} updated.`);
     } catch (err: any) {
@@ -314,7 +332,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleDeleteSalary = async (id: string) => {
     try {
-      await deleteSalaryRecord(id);
+      await deleteSalaryRecord(id, userId, userEmail);
       setSalaryRecords((prev) => prev.filter((s) => s.id !== id));
       setTransactions((prev) => prev.filter((t) => t.salaryRecordId !== id));
       showToast('Salary record deleted.');
@@ -329,7 +347,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     txData: Omit<ExpenseTransaction, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
     try {
-      const created = await addExpenseTransaction(txData);
+      const created = await addExpenseTransaction({ ...txData, userId }, userEmail);
       setTransactions((prev) => [created, ...prev]);
       showToast(`Transaction "${created.title}" added.`);
     } catch (err: any) {
@@ -341,7 +359,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleEditTransaction = async (tx: ExpenseTransaction) => {
     try {
-      await updateExpenseTransaction(tx);
+      await updateExpenseTransaction(tx, userEmail);
       setTransactions((prev) => prev.map((t) => (t.id === tx.id ? tx : t)));
       showToast(`Transaction "${tx.title}" updated.`);
     } catch (err: any) {
@@ -353,7 +371,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleDeleteTransaction = async (id: string) => {
     try {
-      await deleteExpenseTransaction(id);
+      await deleteExpenseTransaction(id, userId, userEmail);
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       showToast('Transaction removed.');
     } catch (err: any) {
@@ -367,9 +385,10 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { id, createdAt, updatedAt, salaryRecordId, ...rest } = tx;
       const duplicated = await addExpenseTransaction({
         ...rest,
+        userId,
         title: `${tx.title} (Copy)`,
         date: new Date().toISOString().slice(0, 10),
-      });
+      }, userEmail);
       setTransactions((prev) => [duplicated, ...prev]);
       showToast(`Duplicated "${tx.title}".`);
     } catch (err: any) {
@@ -385,7 +404,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     categoryBudgets: Record<string, number>
   ) => {
     try {
-      const saved = await saveMonthlyBudget(userId, monthYear, overallBudget, categoryBudgets);
+      const saved = await saveMonthlyBudget(userId, monthYear, overallBudget, categoryBudgets, userEmail);
       setBudgets((prev) => {
         const idx = prev.findIndex((b) => b.monthYear === monthYear);
         if (idx >= 0) {

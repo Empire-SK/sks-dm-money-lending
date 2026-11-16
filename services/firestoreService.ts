@@ -5,19 +5,24 @@ import { Borrower } from '../types';
 const COLLECTION_NAME = 'borrowers';
 
 export const getBorrowers = async (user?: { uid: string; email?: string | null } | null): Promise<Borrower[]> => {
+    if (!user) return [];
+
     const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
     const all = querySnapshot.docs.map(d => ({ ...d.data(), id: d.id } as Borrower));
-    if (!user) return all;
 
     const uid = user.uid;
-    const isPrimary = user.email === 'sabinksanthosh6@gmail.com' || user.email === 'aaryanthampi00@gmail.com';
+    const email = (user.email || '').toLowerCase().trim();
+    const isPrimaryAdmin =
+        email === 'admin@sksdm.com' ||
+        email === 'sabinksanthosh6@gmail.com' ||
+        email === 'aaryanthampi00@gmail.com';
 
     return all.filter(b => {
         if (b.userId) {
             return b.userId === uid;
         }
-        // Legacy borrowers without userId belong to the original primary user
-        return isPrimary;
+        // Legacy borrowers without userId belong to the original admin account
+        return isPrimaryAdmin;
     });
 };
 

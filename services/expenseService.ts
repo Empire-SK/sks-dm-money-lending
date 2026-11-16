@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import {
   collection,
   getDocs,
@@ -6,7 +6,6 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  getDoc,
   query,
   where,
 } from 'firebase/firestore';
@@ -51,17 +50,67 @@ const setLocalData = <T>(key: string, data: T): void => {
   }
 };
 
+/**
+ * Multi-tenant storage key resolver:
+ * Ensures complete separation of user workspaces.
+ * If user is admin (admin@sksdm.com, etc.), it migrates any legacy '_default' records to their scoped storage.
+ * For ANY other user (e.g. amil@sksdm.com), they have an independent storage space based on their UID
+ * and NEVER touch '_default' or see any other user's records.
+ */
+export const getUserScopedKey = (
+  prefix: string,
+  userId?: string | null,
+  userEmail?: string | null
+): string => {
+  const authUser = auth?.currentUser;
+  const effectiveUid =
+    userId && userId !== 'default' && userId !== 'unauthenticated'
+      ? userId
+      : authUser?.uid || null;
+
+  const rawEmail = userEmail || authUser?.email || '';
+  const email = rawEmail.toLowerCase().trim();
+
+  const isAdmin =
+    email === 'admin@sksdm.com' ||
+    email === 'sabinksanthosh6@gmail.com' ||
+    email === 'aaryanthampi00@gmail.com';
+
+  // If no user is authenticated, use unauthenticated partition
+  const safeId = effectiveUid ? effectiveUid : isAdmin ? 'admin' : 'unauthenticated';
+  const scopedKey = `${prefix}_${safeId}`;
+
+  // Auto-migrate legacy '_default' ONLY for the admin user
+  if (typeof window !== 'undefined' && isAdmin && safeId !== 'unauthenticated') {
+    try {
+      const existing = localStorage.getItem(scopedKey);
+      if (!existing) {
+        const legacy = localStorage.getItem(`${prefix}_default`);
+        if (legacy && legacy !== '[]' && legacy !== '{}') {
+          localStorage.setItem(scopedKey, legacy);
+        }
+      }
+    } catch (e) {
+      console.warn('Migration to admin scoped key warning:', e);
+    }
+  }
+
+  return scopedKey;
+};
+
 /* ══════════════════════════════════════════════════════════════
    1. ACCOUNTS SERVICE
    ══════════════════════════════════════════════════════════════ */
 
-export const getExpenseAccounts = async (userId: string): Promise<ExpenseAccount[]> => {
-  const safeUserId = userId || 'default';
-  const localKey = `sks_expense_accounts_${safeUserId}`;
+export const getExpenseAccounts = async (
+  userId: string,
+  userEmail?: string | null
+): Promise<ExpenseAccount[]> => {
+  const localKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
   const localAccounts = getLocalData<ExpenseAccount[]>(localKey, []);
 
   try {
-    if (userId) {
+    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
       const q = query(
         collection(db, ACCOUNTS_COLLECTION),
         where('userId', '==', userId)
@@ -89,7 +138,7 @@ export const getExpenseAccounts = async (userId: string): Promise<ExpenseAccount
 
   // Fallback to local accounts or initial defaults
   if (localAccounts.length > 0) return localAccounts;
-  const defaults = getInitializedDefaultAccounts(safeUserId);
+  const defaults = getInitializedDefaultAccounts(userId || 'default');
   setLocalData(localKey, defaults);
   return defaults;
 };
@@ -115,10 +164,10 @@ export const seedDefaultAccounts = async (userId: string): Promise<ExpenseAccoun
 };
 
 export const addExpenseAccount = async (
-  accountData: Omit<ExpenseAccount, 'id' | 'createdAt' | 'updatedAt'>
+  accountData: Omit<ExpenseAccount, 'id' | 'createdAt' | 'updatedAt'>,
+  userEmail?: string | null
 ): Promise<ExpenseAccount> => {
   const now = new Date().toISOString();
-  const safeUserId = accountData.userId || 'default';
   let createdId = `acc_${Date.now()}`;
 
   const newDoc = {
@@ -136,14 +185,16 @@ export const addExpenseAccount = async (
   }
 
   const result: ExpenseAccount = { ...newDoc, id: createdId };
-  const localKey = `sks_expense_accounts_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_accounts', accountData.userId, userEmail);
   const localList = getLocalData<ExpenseAccount[]>(localKey, []);
   setLocalData(localKey, [...localList, result]);
   return result;
 };
 
-export const updateExpenseAccount = async (account: ExpenseAccount): Promise<void> => {
-  const safeUserId = account.userId || 'default';
+export const updateExpenseAccount = async (
+  account: ExpenseAccount,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     const ref = doc(db, ACCOUNTS_COLLECTION, account.id);
     const { id, ...data } = account;
@@ -156,30 +207,40 @@ export const updateExpenseAccount = async (account: ExpenseAccount): Promise<voi
     console.warn('Firestore updateExpenseAccount failed, updating locally:', err);
   }
 
-  const localKey = `sks_expense_accounts_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_accounts', account.userId, userEmail);
   const localList = getLocalData<ExpenseAccount[]>(localKey, []);
   setLocalData(localKey, localList.map((a) => (a.id === account.id ? account : a)));
 };
 
-export const deleteExpenseAccount = async (id: string): Promise<void> => {
+export const deleteExpenseAccount = async (
+  id: string,
+  userId?: string | null,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     await deleteDoc(doc(db, ACCOUNTS_COLLECTION, id));
   } catch (err) {
     console.warn('Firestore deleteExpenseAccount failed:', err);
   }
+
+  const localKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
+  const localList = getLocalData<ExpenseAccount[]>(localKey, []);
+  setLocalData(localKey, localList.filter((a) => a.id !== id));
 };
 
 /* ══════════════════════════════════════════════════════════════
    2. CATEGORIES SERVICE
    ══════════════════════════════════════════════════════════════ */
 
-export const getExpenseCategories = async (userId: string): Promise<ExpenseCategory[]> => {
-  const safeUserId = userId || 'default';
-  const localKey = `sks_expense_categories_${safeUserId}`;
+export const getExpenseCategories = async (
+  userId: string,
+  userEmail?: string | null
+): Promise<ExpenseCategory[]> => {
+  const localKey = getUserScopedKey('sks_expense_categories', userId, userEmail);
   const localCats = getLocalData<ExpenseCategory[]>(localKey, []);
 
   try {
-    if (userId) {
+    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
       const q = query(
         collection(db, CATEGORIES_COLLECTION),
         where('userId', '==', userId)
@@ -207,7 +268,7 @@ export const getExpenseCategories = async (userId: string): Promise<ExpenseCateg
 
   // Fallback to local categories or initial defaults
   if (localCats.length > 0) return localCats;
-  const defaults = getInitializedDefaultCategories(safeUserId);
+  const defaults = getInitializedDefaultCategories(userId || 'default');
   setLocalData(localKey, defaults);
   return defaults;
 };
@@ -232,10 +293,10 @@ export const seedDefaultCategories = async (userId: string): Promise<ExpenseCate
 };
 
 export const addExpenseCategory = async (
-  categoryData: Omit<ExpenseCategory, 'id' | 'createdAt'>
+  categoryData: Omit<ExpenseCategory, 'id' | 'createdAt'>,
+  userEmail?: string | null
 ): Promise<ExpenseCategory> => {
   const now = new Date().toISOString();
-  const safeUserId = categoryData.userId || 'default';
   let createdId = `cat_${Date.now()}`;
 
   const newDoc = {
@@ -251,14 +312,16 @@ export const addExpenseCategory = async (
   }
 
   const result: ExpenseCategory = { ...newDoc, id: createdId };
-  const localKey = `sks_expense_categories_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_categories', categoryData.userId, userEmail);
   const localList = getLocalData<ExpenseCategory[]>(localKey, []);
   setLocalData(localKey, [...localList, result]);
   return result;
 };
 
-export const updateExpenseCategory = async (category: ExpenseCategory): Promise<void> => {
-  const safeUserId = category.userId || 'default';
+export const updateExpenseCategory = async (
+  category: ExpenseCategory,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     const ref = doc(db, CATEGORIES_COLLECTION, category.id);
     const { id, ...data } = category;
@@ -267,30 +330,40 @@ export const updateExpenseCategory = async (category: ExpenseCategory): Promise<
     console.warn('Firestore updateExpenseCategory failed:', err);
   }
 
-  const localKey = `sks_expense_categories_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_categories', category.userId, userEmail);
   const localList = getLocalData<ExpenseCategory[]>(localKey, []);
   setLocalData(localKey, localList.map((c) => (c.id === category.id ? category : c)));
 };
 
-export const deleteExpenseCategory = async (id: string): Promise<void> => {
+export const deleteExpenseCategory = async (
+  id: string,
+  userId?: string | null,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
   } catch (err) {
     console.warn('Firestore deleteExpenseCategory failed:', err);
   }
+
+  const localKey = getUserScopedKey('sks_expense_categories', userId, userEmail);
+  const localList = getLocalData<ExpenseCategory[]>(localKey, []);
+  setLocalData(localKey, localList.filter((c) => c.id !== id));
 };
 
 /* ══════════════════════════════════════════════════════════════
    3. SALARY RECORDS SERVICE
    ══════════════════════════════════════════════════════════════ */
 
-export const getSalaryRecords = async (userId: string): Promise<SalaryRecord[]> => {
-  const safeUserId = userId || 'default';
-  const localKey = `sks_salary_records_${safeUserId}`;
+export const getSalaryRecords = async (
+  userId: string,
+  userEmail?: string | null
+): Promise<SalaryRecord[]> => {
+  const localKey = getUserScopedKey('sks_salary_records', userId, userEmail);
   const localRecords = getLocalData<SalaryRecord[]>(localKey, []);
 
   try {
-    if (userId) {
+    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
       const q = query(
         collection(db, SALARY_COLLECTION),
         where('userId', '==', userId)
@@ -308,7 +381,8 @@ export const getSalaryRecords = async (userId: string): Promise<SalaryRecord[]> 
 };
 
 export const addSalaryRecord = async (
-  salaryData: Omit<SalaryRecord, 'id' | 'createdAt' | 'updatedAt' | 'totalIncome'>
+  salaryData: Omit<SalaryRecord, 'id' | 'createdAt' | 'updatedAt' | 'totalIncome'>,
+  userEmail?: string | null
 ): Promise<SalaryRecord> => {
   const total = roundCurrency(
     (salaryData.baseSalary || 0) +
@@ -318,7 +392,6 @@ export const addSalaryRecord = async (
   );
 
   const now = new Date().toISOString();
-  const safeUserId = salaryData.userId || 'default';
   let salaryId = `sal_${Date.now()}`;
 
   const newSalary: Omit<SalaryRecord, 'id'> = {
@@ -367,18 +440,21 @@ export const addSalaryRecord = async (
   }
 
   // Update local storage
-  const localKey = `sks_salary_records_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_salary_records', salaryData.userId, userEmail);
   const localList = getLocalData<SalaryRecord[]>(localKey, []);
   setLocalData(localKey, [resultSalary, ...localList]);
 
-  const txKey = `sks_expense_transactions_${safeUserId}`;
+  const txKey = getUserScopedKey('sks_expense_transactions', salaryData.userId, userEmail);
   const txList = getLocalData<ExpenseTransaction[]>(txKey, []);
   setLocalData(txKey, [{ ...linkedTransaction, id: `tx_sal_${salaryId}` }, ...txList]);
 
   return resultSalary;
 };
 
-export const updateSalaryRecord = async (salary: SalaryRecord): Promise<void> => {
+export const updateSalaryRecord = async (
+  salary: SalaryRecord,
+  userEmail?: string | null
+): Promise<void> => {
   const total = roundCurrency(
     (salary.baseSalary || 0) +
     (salary.bonus || 0) +
@@ -387,7 +463,6 @@ export const updateSalaryRecord = async (salary: SalaryRecord): Promise<void> =>
   );
 
   const now = new Date().toISOString();
-  const safeUserId = salary.userId || 'default';
 
   try {
     const salaryRef = doc(db, SALARY_COLLECTION, salary.id);
@@ -405,12 +480,16 @@ export const updateSalaryRecord = async (salary: SalaryRecord): Promise<void> =>
     console.warn('Firestore updateSalaryRecord failed:', err);
   }
 
-  const localKey = `sks_salary_records_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_salary_records', salary.userId, userEmail);
   const localList = getLocalData<SalaryRecord[]>(localKey, []);
   setLocalData(localKey, localList.map((s) => (s.id === salary.id ? { ...salary, totalIncome: total, updatedAt: now } : s)));
 };
 
-export const deleteSalaryRecord = async (salaryId: string): Promise<void> => {
+export const deleteSalaryRecord = async (
+  salaryId: string,
+  userId?: string | null,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     await deleteDoc(doc(db, SALARY_COLLECTION, salaryId));
     const q = query(
@@ -424,19 +503,29 @@ export const deleteSalaryRecord = async (salaryId: string): Promise<void> => {
   } catch (err) {
     console.warn('Firestore deleteSalaryRecord failed:', err);
   }
+
+  const localKey = getUserScopedKey('sks_salary_records', userId, userEmail);
+  const localList = getLocalData<SalaryRecord[]>(localKey, []);
+  setLocalData(localKey, localList.filter((s) => s.id !== salaryId));
+
+  const txKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
+  const txList = getLocalData<ExpenseTransaction[]>(txKey, []);
+  setLocalData(txKey, txList.filter((t) => t.salaryRecordId !== salaryId));
 };
 
 /* ══════════════════════════════════════════════════════════════
    4. TRANSACTIONS SERVICE
    ══════════════════════════════════════════════════════════════ */
 
-export const getExpenseTransactions = async (userId: string): Promise<ExpenseTransaction[]> => {
-  const safeUserId = userId || 'default';
-  const localKey = `sks_expense_transactions_${safeUserId}`;
+export const getExpenseTransactions = async (
+  userId: string,
+  userEmail?: string | null
+): Promise<ExpenseTransaction[]> => {
+  const localKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
   const localTxs = getLocalData<ExpenseTransaction[]>(localKey, []);
 
   try {
-    if (userId) {
+    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
       const q = query(
         collection(db, TRANSACTIONS_COLLECTION),
         where('userId', '==', userId)
@@ -456,10 +545,10 @@ export const getExpenseTransactions = async (userId: string): Promise<ExpenseTra
 };
 
 export const addExpenseTransaction = async (
-  txData: Omit<ExpenseTransaction, 'id' | 'createdAt' | 'updatedAt'>
+  txData: Omit<ExpenseTransaction, 'id' | 'createdAt' | 'updatedAt'>,
+  userEmail?: string | null
 ): Promise<ExpenseTransaction> => {
   const now = new Date().toISOString();
-  const safeUserId = txData.userId || 'default';
   let createdId = `tx_${Date.now()}`;
 
   const newDoc = {
@@ -477,14 +566,16 @@ export const addExpenseTransaction = async (
   }
 
   const result: ExpenseTransaction = { ...newDoc, id: createdId };
-  const localKey = `sks_expense_transactions_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_transactions', txData.userId, userEmail);
   const localList = getLocalData<ExpenseTransaction[]>(localKey, []);
   setLocalData(localKey, [result, ...localList]);
   return result;
 };
 
-export const updateExpenseTransaction = async (tx: ExpenseTransaction): Promise<void> => {
-  const safeUserId = tx.userId || 'default';
+export const updateExpenseTransaction = async (
+  tx: ExpenseTransaction,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     const ref = doc(db, TRANSACTIONS_COLLECTION, tx.id);
     const { id, ...data } = tx;
@@ -497,30 +588,40 @@ export const updateExpenseTransaction = async (tx: ExpenseTransaction): Promise<
     console.warn('Firestore updateExpenseTransaction failed:', err);
   }
 
-  const localKey = `sks_expense_transactions_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_transactions', tx.userId, userEmail);
   const localList = getLocalData<ExpenseTransaction[]>(localKey, []);
   setLocalData(localKey, localList.map((t) => (t.id === tx.id ? tx : t)));
 };
 
-export const deleteExpenseTransaction = async (id: string): Promise<void> => {
+export const deleteExpenseTransaction = async (
+  id: string,
+  userId?: string | null,
+  userEmail?: string | null
+): Promise<void> => {
   try {
     await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
   } catch (err) {
     console.warn('Firestore deleteExpenseTransaction failed:', err);
   }
+
+  const localKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
+  const localList = getLocalData<ExpenseTransaction[]>(localKey, []);
+  setLocalData(localKey, localList.filter((t) => t.id !== id));
 };
 
 /* ══════════════════════════════════════════════════════════════
    5. BUDGETS SERVICE
    ══════════════════════════════════════════════════════════════ */
 
-export const getMonthlyBudgets = async (userId: string): Promise<MonthlyBudget[]> => {
-  const safeUserId = userId || 'default';
-  const localKey = `sks_expense_budgets_${safeUserId}`;
+export const getMonthlyBudgets = async (
+  userId: string,
+  userEmail?: string | null
+): Promise<MonthlyBudget[]> => {
+  const localKey = getUserScopedKey('sks_expense_budgets', userId, userEmail);
   const localBudgets = getLocalData<MonthlyBudget[]>(localKey, []);
 
   try {
-    if (userId) {
+    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
       const q = query(
         collection(db, BUDGETS_COLLECTION),
         where('userId', '==', userId)
@@ -541,9 +642,9 @@ export const saveMonthlyBudget = async (
   userId: string,
   monthYear: string,
   overallBudget: number,
-  categoryBudgets: Record<string, number>
+  categoryBudgets: Record<string, number>,
+  userEmail?: string | null
 ): Promise<MonthlyBudget> => {
-  const safeUserId = userId || 'default';
   const now = new Date().toISOString();
 
   const cleanedCategoryBudgets: Record<string, number> = {};
@@ -554,7 +655,7 @@ export const saveMonthlyBudget = async (
   const roundedOverall = roundCurrency(overallBudget || 0);
 
   const newDoc = {
-    userId: safeUserId,
+    userId: userId || 'unauthenticated',
     monthYear,
     overallBudget: roundedOverall,
     categoryBudgets: cleanedCategoryBudgets,
@@ -565,30 +666,32 @@ export const saveMonthlyBudget = async (
   let budgetId = `bdg_${monthYear}`;
 
   try {
-    const q = query(
-      collection(db, BUDGETS_COLLECTION),
-      where('userId', '==', safeUserId),
-      where('monthYear', '==', monthYear)
-    );
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const existingDoc = snap.docs[0];
-      budgetId = existingDoc.id;
-      await updateDoc(doc(db, BUDGETS_COLLECTION, budgetId), {
-        overallBudget: roundedOverall,
-        categoryBudgets: cleanedCategoryBudgets,
-        updatedAt: now,
-      });
-    } else {
-      const ref = await addDoc(collection(db, BUDGETS_COLLECTION), newDoc);
-      budgetId = ref.id;
+    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
+      const q = query(
+        collection(db, BUDGETS_COLLECTION),
+        where('userId', '==', userId),
+        where('monthYear', '==', monthYear)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const existingDoc = snap.docs[0];
+        budgetId = existingDoc.id;
+        await updateDoc(doc(db, BUDGETS_COLLECTION, budgetId), {
+          overallBudget: roundedOverall,
+          categoryBudgets: cleanedCategoryBudgets,
+          updatedAt: now,
+        });
+      } else {
+        const ref = await addDoc(collection(db, BUDGETS_COLLECTION), newDoc);
+        budgetId = ref.id;
+      }
     }
   } catch (err) {
     console.warn('Firestore saveMonthlyBudget failed, saving locally:', err);
   }
 
   const result: MonthlyBudget = { ...newDoc, id: budgetId };
-  const localKey = `sks_expense_budgets_${safeUserId}`;
+  const localKey = getUserScopedKey('sks_expense_budgets', userId, userEmail);
   const localList = getLocalData<MonthlyBudget[]>(localKey, []);
   const idx = localList.findIndex((b) => b.monthYear === monthYear);
   if (idx >= 0) {

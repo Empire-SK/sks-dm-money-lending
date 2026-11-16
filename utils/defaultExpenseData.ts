@@ -90,12 +90,20 @@ export const DEFAULT_ACCOUNTS: Omit<ExpenseAccount, 'id' | 'userId' | 'createdAt
     notes: 'Physical cash in hand',
   },
   {
-    name: 'UPI',
+    name: 'Primary UPI / GPay',
     type: 'upi',
     openingBalance: 0,
     color: '#3B82F6',
     icon: 'Smartphone',
     notes: 'UPI enabled account (Google Pay, PhonePe, Paytm)',
+  },
+  {
+    name: 'Federal Bank / Savings',
+    type: 'bank',
+    openingBalance: 0,
+    color: '#8B5CF6',
+    icon: 'Landmark',
+    notes: 'Bank savings account (Federal Bank, HDFC, SBI, etc.)',
   },
 ];
 

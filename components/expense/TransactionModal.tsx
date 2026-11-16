@@ -21,6 +21,7 @@ import {
   parseIndianNumber,
   formatIndianWords,
 } from '../../utils/expenseCalculations';
+import { AccountModal } from './AccountModal';
 import {
   getInitializedDefaultAccounts,
   getInitializedDefaultCategories,
@@ -75,6 +76,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [receiptName, setReceiptName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [error, setError] = useState('');
 
   // Populate initial data when editing or opening
@@ -371,10 +373,26 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="label-base">From Account *</label>
+                    <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                      <label className="label-base !mb-0">From Account *</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddAccountOpen(true)}
+                        className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold inline-flex items-center gap-0.5"
+                      >
+                        <Plus size={12} /> New Bank / UPI
+                      </button>
+                    </div>
                     <select
                       value={accountId || activeAccounts[0]?.id || ''}
-                      onChange={(e) => setAccountId(e.target.value)}
+                      onChange={(e) => {
+                        const newFrom = e.target.value;
+                        setAccountId(newFrom);
+                        if (toAccountId === newFrom) {
+                          const alt = activeAccounts.find((a) => a.id !== newFrom);
+                          if (alt) setToAccountId(alt.id);
+                        }
+                      }}
                       required
                       className="input-base"
                     >
@@ -386,10 +404,26 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="label-base">To Account *</label>
+                    <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                      <label className="label-base !mb-0">To Account *</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddAccountOpen(true)}
+                        className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold inline-flex items-center gap-0.5"
+                      >
+                        <Plus size={12} /> New Bank / UPI
+                      </button>
+                    </div>
                     <select
                       value={toAccountId || activeAccounts[1]?.id || activeAccounts[0]?.id || ''}
-                      onChange={(e) => setToAccountId(e.target.value)}
+                      onChange={(e) => {
+                        const newTo = e.target.value;
+                        setToAccountId(newTo);
+                        if (accountId === newTo) {
+                          const alt = activeAccounts.find((a) => a.id !== newTo);
+                          if (alt) setAccountId(alt.id);
+                        }
+                      }}
                       required
                       className="input-base"
                     >
@@ -401,6 +435,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     </select>
                   </div>
                 </div>
+
+                {/* Transfer Guidance Callout */}
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs flex items-start gap-2.5">
+                  <ArrowRightLeft size={16} className="flex-shrink-0 text-blue-400 mt-0.5" />
+                  <div className="text-[11px] leading-relaxed">
+                    <span className="font-semibold text-blue-200">Transferring Between Multiple Accounts:</span> Select the sending account in <em>From Account</em> and the receiving account in <em>To Account</em> (e.g. Primary UPI ➔ Federal Bank). If your other bank account is not listed, click <button type="button" onClick={() => setIsAddAccountOpen(true)} className="underline font-semibold text-emerald-400 hover:text-emerald-300">+ New Bank / UPI</button> to add it instantly.
+                  </div>
+                </div>
+
                 <div>
                   <label className="label-base">Date *</label>
                   <input
@@ -416,7 +459,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               /* Income: only Credited To Account and Date (no unnecessary expense category!) */
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="label-base">Credited To Account *</label>
+                  <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                    <label className="label-base !mb-0">Credited To Account *</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddAccountOpen(true)}
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold inline-flex items-center gap-0.5"
+                    >
+                      <Plus size={12} /> New Account
+                    </button>
+                  </div>
                   <select
                     value={accountId || activeAccounts[0]?.id || ''}
                     onChange={(e) => setAccountId(e.target.value)}
@@ -447,9 +499,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="label-base">
-                      {type === 'expense' ? 'Paid From Account *' : 'Refund To Account *'}
-                    </label>
+                    <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                      <label className="label-base !mb-0">
+                        {type === 'expense' ? 'Paid From Account *' : 'Refund To Account *'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddAccountOpen(true)}
+                        className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold inline-flex items-center gap-0.5"
+                      >
+                        <Plus size={12} /> New Account
+                      </button>
+                    </div>
                     <select
                       value={accountId || activeAccounts[0]?.id || ''}
                       onChange={(e) => setAccountId(e.target.value)}
@@ -648,6 +709,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Quick Add Account Modal */}
+      {isAddAccountOpen && (
+        <AccountModal
+          isOpen={isAddAccountOpen}
+          onClose={() => setIsAddAccountOpen(false)}
+        />
+      )}
     </div>
   );
 };

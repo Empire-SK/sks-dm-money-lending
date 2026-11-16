@@ -4,14 +4,32 @@ import { Borrower } from '../types';
 
 const COLLECTION_NAME = 'borrowers';
 
-export const getBorrowers = async (): Promise<Borrower[]> => {
+export const getBorrowers = async (user?: { uid: string; email?: string | null } | null): Promise<Borrower[]> => {
+    if (!user) return [];
+
     const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
-    return querySnapshot.docs.map(d => ({ ...d.data(), id: d.id } as Borrower));
+    const all = querySnapshot.docs.map(d => ({ ...d.data(), id: d.id } as Borrower));
+
+    const uid = user.uid;
+    const email = (user.email || '').toLowerCase().trim();
+    const isPrimaryAdmin =
+        email === 'admin@sksdm.com' ||
+        email === 'sabinksanthosh6@gmail.com' ||
+        email === 'aaryanthampi00@gmail.com';
+
+    return all.filter(b => {
+        if (b.userId) {
+            return b.userId === uid;
+        }
+        // Legacy borrowers without userId belong to the original admin account
+        return isPrimaryAdmin;
+    });
 };
 
-export const addBorrower = async (borrower: Omit<Borrower, 'id'>): Promise<Borrower> => {
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), borrower);
-    return { ...borrower, id: docRef.id } as Borrower;
+export const addBorrower = async (borrower: Omit<Borrower, 'id'>, userId?: string): Promise<Borrower> => {
+    const dataToSave = userId ? { ...borrower, userId } : borrower;
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), dataToSave);
+    return { ...dataToSave, id: docRef.id } as Borrower;
 };
 
 export const updateBorrower = async (borrower: Borrower): Promise<void> => {

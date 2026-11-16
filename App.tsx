@@ -25,6 +25,7 @@ import { ExpenseProvider } from './contexts/ExpenseContext';
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [borrowers, setBorrowers] = useState<Borrower[]>([]);
 
   useEffect(() => {
@@ -35,10 +36,11 @@ const App: React.FC = () => {
 
     const unsubscribe = subscribeToAuthChanges(async (user) => {
       if (!mounted) return;
+      setCurrentUser(user);
       setIsAuthenticated(!!user);
       if (user) {
         try {
-          const data = await getBorrowers();
+          const data = await getBorrowers(user);
           if (mounted) setBorrowers(data);
         } catch (error) {
           console.error('Error loading data:', error);
@@ -61,12 +63,22 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
-    try { await logout(); } catch (error) { console.error('Logout failed:', error); }
+    try {
+      await logout();
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      setBorrowers([]);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const handleAddBorrower = async (newBorrowerData: Omit<Borrower, 'id' | 'repaidAmount' | 'status' | 'history'>) => {
     try {
-      const created = await addBorrower({ ...newBorrowerData, repaidAmount: 0, status: 'Active', history: [] });
+      const created = await addBorrower(
+        { ...newBorrowerData, repaidAmount: 0, status: 'Active', history: [] },
+        currentUser?.uid
+      );
       setBorrowers(prev => [...prev, created]);
     } catch (error) {
       console.error('Error adding borrower:', error);
@@ -171,7 +183,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <ExpenseProvider>
+      <ExpenseProvider key={currentUser?.uid || 'guest'}>
         <HashRouter>
           <Routes>
             <Route path="/login" element={

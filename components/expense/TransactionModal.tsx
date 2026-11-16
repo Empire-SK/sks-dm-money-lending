@@ -17,6 +17,11 @@ import { useExpense } from '../../contexts/ExpenseContext';
 import { ExpenseTransaction, TransactionType } from '../../types/expense';
 import { uploadReceiptFile } from '../../services/receiptService';
 import {
+  formatIndianNumber,
+  parseIndianNumber,
+  formatIndianWords,
+} from '../../utils/expenseCalculations';
+import {
   getInitializedDefaultAccounts,
   getInitializedDefaultCategories,
 } from '../../utils/defaultExpenseData';
@@ -77,7 +82,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     if (initialData) {
       setType(initialData.type);
       setTitle(initialData.title);
-      setAmount(initialData.amount ? String(initialData.amount) : '');
+      setAmount(initialData.amount ? formatIndianNumber(initialData.amount) : '');
       setCategoryId(initialData.categoryId || activeCategories[0]?.id || '');
       setSubcategory(initialData.subcategory || '');
       setAccountId(initialData.accountId || activeAccounts[0]?.id || '');
@@ -105,6 +110,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     }
     setError('');
   }, [initialData, defaultType, isOpen, activeCategories, activeAccounts]);
+
+  const parsedAmount = useMemo(() => parseIndianNumber(amount), [amount]);
+  const amountInWords = useMemo(() => formatIndianWords(parsedAmount), [parsedAmount]);
 
   // Selected category subcategories
   const selectedCategoryObj = activeCategories.find((c) => c.id === categoryId) || activeCategories[0];
@@ -138,7 +146,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     e.preventDefault();
     setError('');
 
-    const numAmount = parseFloat(amount);
+    const numAmount = parseIndianNumber(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       setError('Please enter a valid positive amount.');
       return;
@@ -313,20 +321,26 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             {/* Amount and Title */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label-base">Amount (₹) *</label>
+                <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                  <label className="label-base !mb-0">Amount (₹) *</label>
+                  {parsedAmount > 0 && (
+                    <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                      {amountInWords ? `₹${amount} (${amountInWords})` : `₹${amount}`}
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500 font-semibold">
                     ₹
                   </span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
+                    type="text"
+                    inputMode="decimal"
                     required
-                    placeholder="0.00"
+                    placeholder="0"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="input-base pl-8 text-base font-bold"
+                    onChange={(e) => setAmount(formatIndianNumber(e.target.value))}
+                    className="input-base pl-8 text-base font-bold tabular-nums"
                   />
                 </div>
               </div>

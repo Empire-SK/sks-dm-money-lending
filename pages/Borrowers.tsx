@@ -5,6 +5,11 @@ import {
   Share2, CheckCircle, X, TrendingUp, TrendingDown, Filter
 } from 'lucide-react';
 import { Borrower } from '../types';
+import {
+  formatIndianNumber,
+  parseIndianNumber,
+  formatIndianWords,
+} from '../utils/expenseCalculations';
 
 interface BorrowersProps {
   borrowers: Borrower[];
@@ -180,7 +185,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
   const handleOpenEdit = (b: Borrower) => {
     setEditingId(b.id);
     const phone = b.phone.startsWith('+91') ? b.phone.substring(3).trim() : b.phone;
-    setFormData({ name: b.name, phone, email: b.email, loanAmount: b.loanAmount.toString(), startDate: b.startDate, note: b.note || '' });
+    setFormData({ name: b.name, phone, email: b.email, loanAmount: formatIndianNumber(b.loanAmount), startDate: b.startDate, note: b.note || '' });
     setIsModalOpen(true);
   };
 
@@ -189,9 +194,10 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedLoan = parseIndianNumber(formData.loanAmount);
     const payload = {
       name: formData.name, phone: `+91 ${formData.phone}`, email: formData.email,
-      loanAmount: Number(formData.loanAmount), totalPayable: Number(formData.loanAmount),
+      loanAmount: parsedLoan, totalPayable: parsedLoan,
       startDate: formData.startDate, note: formData.note,
     };
     if (editingId) {
@@ -205,16 +211,18 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
   const handleRepaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (repayingId && repayAmount) {
-      onRepay(repayingId, Number(repayAmount), repayNote);
+    const parsedRepay = parseIndianNumber(repayAmount);
+    if (repayingId && parsedRepay > 0) {
+      onRepay(repayingId, parsedRepay, repayNote);
       setIsRepayModalOpen(false); setRepayingId(null); setRepayAmount(''); setRepayNote('');
     }
   };
 
   const handleTopUpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (topUpId && topUpAmount) {
-      onTopUp(topUpId, Number(topUpAmount), topUpNote);
+    const parsedTopUp = parseIndianNumber(topUpAmount);
+    if (topUpId && parsedTopUp > 0) {
+      onTopUp(topUpId, parsedTopUp, topUpNote);
       setIsTopUpModalOpen(false); setTopUpId(null); setTopUpAmount(''); setTopUpNote('');
     }
   };
@@ -522,12 +530,27 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
             {/* Loan Amount */}
             <div>
-              <label className="label-base">Loan Amount</label>
+              <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                <label className="label-base !mb-0">Loan Amount (₹) *</label>
+                {parseIndianNumber(formData.loanAmount) > 0 && (
+                  <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    {formatIndianWords(parseIndianNumber(formData.loanAmount))
+                      ? `₹${formData.loanAmount} (${formatIndianWords(parseIndianNumber(formData.loanAmount))})`
+                      : `₹${formData.loanAmount}`}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-600 text-sm pointer-events-none">₹</span>
-                <input required type="number" min="0" placeholder="50000"
-                  value={formData.loanAmount} onChange={e => setFormData({ ...formData, loanAmount: e.target.value })}
-                  className="input-base pl-8" />
+                <input
+                  required
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="50,000"
+                  value={formData.loanAmount}
+                  onChange={e => setFormData({ ...formData, loanAmount: formatIndianNumber(e.target.value) })}
+                  className="input-base pl-8 font-semibold tabular-nums"
+                />
               </div>
             </div>
 
@@ -574,12 +597,27 @@ const Borrowers: React.FC<BorrowersProps> = ({
               </div>
             )}
             <div>
-              <label className="label-base">Amount Received</label>
+              <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                <label className="label-base !mb-0">Amount Received (₹) *</label>
+                {parseIndianNumber(repayAmount) > 0 && (
+                  <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    {formatIndianWords(parseIndianNumber(repayAmount))
+                      ? `₹${repayAmount} (${formatIndianWords(parseIndianNumber(repayAmount))})`
+                      : `₹${repayAmount}`}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-600 text-sm pointer-events-none">₹</span>
-                <input required type="number" min="1" placeholder="0"
-                  value={repayAmount} onChange={e => setRepayAmount(e.target.value)}
-                  className="input-base pl-8 text-lg font-semibold" />
+                <input
+                  required
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={repayAmount}
+                  onChange={e => setRepayAmount(formatIndianNumber(e.target.value))}
+                  className="input-base pl-8 text-lg font-semibold tabular-nums"
+                />
               </div>
             </div>
             <div>
@@ -624,12 +662,27 @@ const Borrowers: React.FC<BorrowersProps> = ({
               </div>
             )}
             <div>
-              <label className="label-base">Amount to Add</label>
+              <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                <label className="label-base !mb-0">Amount to Add (₹) *</label>
+                {parseIndianNumber(topUpAmount) > 0 && (
+                  <span className="text-[11px] font-semibold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-md border border-violet-500/20">
+                    {formatIndianWords(parseIndianNumber(topUpAmount))
+                      ? `₹${topUpAmount} (${formatIndianWords(parseIndianNumber(topUpAmount))})`
+                      : `₹${topUpAmount}`}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-zinc-600 text-sm pointer-events-none">₹</span>
-                <input required type="number" min="1" placeholder="5000"
-                  value={topUpAmount} onChange={e => setTopUpAmount(e.target.value)}
-                  className="input-base pl-8 text-lg font-semibold" />
+                <input
+                  required
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="5,000"
+                  value={topUpAmount}
+                  onChange={e => setTopUpAmount(formatIndianNumber(e.target.value))}
+                  className="input-base pl-8 text-lg font-semibold tabular-nums"
+                />
               </div>
             </div>
             <div>

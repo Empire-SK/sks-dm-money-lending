@@ -376,6 +376,59 @@ assert.strictEqual(getBudgetAlertStatus(920, 1000).status, 'high_warning');
 assert.strictEqual(getBudgetAlertStatus(1050, 1000).status, 'exceeded');
 console.log('✓ Budget alerts thresholds passed: normal <75%, warning 75-89%, high_warning 90-99%, exceeded >=100%');
 
+const formatIndianNumber = (value) => {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (!str) return '';
+
+  const clean = str.replace(/[^0-9.]/g, '');
+  const parts = clean.split('.');
+  let integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? '.' + parts.slice(1).join('').slice(0, 2) : '';
+
+  if (integerPart.length > 1 && integerPart.startsWith('0')) {
+    integerPart = integerPart.replace(/^0+/, '') || '0';
+  }
+
+  if (!integerPart && !decimalPart) return '';
+  if (!integerPart && decimalPart) return '0' + decimalPart;
+
+  let lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  if (otherNumbers !== '') lastThree = ',' + lastThree;
+  const formattedInteger = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+
+  return formattedInteger + decimalPart;
+};
+
+const parseIndianNumber = (value) => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  const clean = String(value).replace(/,/g, '').trim();
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : roundCurrency(num);
+};
+
+const formatIndianWords = (num) => {
+  if (!num || num <= 0) return '';
+  if (num >= 10000000) {
+    const cr = num / 10000000;
+    const formatted = cr >= 100 ? Math.round(cr) : Number(cr.toFixed(2));
+    return `${formatted} Crore${formatted > 1 ? 's' : ''}`;
+  }
+  if (num >= 100000) {
+    const lakh = num / 100000;
+    const formatted = lakh >= 100 ? Math.round(lakh) : Number(lakh.toFixed(2));
+    return `${formatted} Lakh${formatted > 1 ? 's' : ''}`;
+  }
+  if (num >= 1000) {
+    const k = num / 1000;
+    const formatted = k >= 100 ? Math.round(k) : Number(k.toFixed(2));
+    return `${formatted} Thousand`;
+  }
+  return '';
+};
+
 // TEST 7: Zero Income Month
 console.log('\n[Test 7] Zero-Income Month Handled Gracefully');
 const zeroMonthSummary = calculateMonthlySummary('2026-03', testTransactions, testSalary, { overallBudget: 5000 });
@@ -384,6 +437,21 @@ assert.strictEqual(zeroMonthSummary.savingsRate, 0);
 assert.strictEqual(zeroMonthSummary.expenseRate, 0);
 assert.strictEqual(isNaN(zeroMonthSummary.savingsRate), false);
 console.log('✓ Zero-income month passed without NaN or division by zero errors.');
+
+// TEST 8: Indian Number Comma Grouping & Words Preview
+console.log('\n[Test 8] Indian Number Comma Grouping & Zero Clarity');
+assert.strictEqual(formatIndianNumber('100000'), '1,00,000');
+assert.strictEqual(formatIndianNumber('1500'), '1,500');
+assert.strictEqual(formatIndianNumber('25000'), '25,000');
+assert.strictEqual(formatIndianNumber('1000000'), '10,00,000');
+assert.strictEqual(formatIndianNumber('10000000'), '1,00,00,000');
+assert.strictEqual(formatIndianNumber('100000.50'), '1,00,000.50');
+assert.strictEqual(parseIndianNumber('1,00,000'), 100000);
+assert.strictEqual(parseIndianNumber('1,00,00,000.50'), 10000000.50);
+assert.strictEqual(formatIndianWords(100000), '1 Lakh');
+assert.strictEqual(formatIndianWords(1000000), '10 Lakhs');
+assert.strictEqual(formatIndianWords(10000000), '1 Crore');
+console.log('✓ Indian comma formatting (100000 -> 1,00,000) and words conversion passed.');
 
 console.log('\n=========================================');
 console.log('ALL FINANCIAL TESTS PASSED SUCCESSFULLY! ✓');

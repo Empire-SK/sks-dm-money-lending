@@ -18,7 +18,7 @@ import { useExpense } from '../../contexts/ExpenseContext';
 import { ExpenseNav } from '../../components/expense/ExpenseNav';
 import { AccountModal } from '../../components/expense/AccountModal';
 import { ExpenseAccount } from '../../types/expense';
-import { formatINR } from '../../utils/expenseCalculations';
+import { formatINR, formatIndianNumber, parseIndianNumber } from '../../utils/expenseCalculations';
 
 export const Accounts: React.FC = () => {
   const {
@@ -54,14 +54,14 @@ export const Accounts: React.FC = () => {
 
   const handleOpenReconcile = (account: ExpenseAccount, currentBalance: number) => {
     setReconcilingAccount(account);
-    setNewReconciledBalance(String(currentBalance));
+    setNewReconciledBalance(formatIndianNumber(currentBalance));
   };
 
   const handleSaveReconciliation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reconcilingAccount) return;
 
-    const targetBalance = parseFloat(newReconciledBalance);
+    const targetBalance = parseIndianNumber(newReconciledBalance);
     if (isNaN(targetBalance)) return;
 
     // To reconcile: adjust opening balance such that current balance equals target balance
@@ -284,12 +284,12 @@ export const Accounts: React.FC = () => {
                 <div>
                   <label className="label-base">Actual Verified Balance (₹)</label>
                   <input
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
                     required
                     value={newReconciledBalance}
-                    onChange={(e) => setNewReconciledBalance(e.target.value)}
-                    className="input-base font-bold text-base"
+                    onChange={(e) => setNewReconciledBalance(formatIndianNumber(e.target.value))}
+                    className="input-base font-bold text-base tabular-nums"
                   />
                 </div>
               </div>

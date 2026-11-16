@@ -3,7 +3,12 @@ import { X, Target, AlertCircle, Sparkles } from 'lucide-react';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { MonthlyBudget } from '../../types/expense';
 import { CategoryIcon } from './CategoryIcon';
-import { formatINR, roundCurrency } from '../../utils/expenseCalculations';
+import {
+  formatINR,
+  roundCurrency,
+  formatIndianNumber,
+  parseIndianNumber,
+} from '../../utils/expenseCalculations';
 import { getInitializedDefaultCategories } from '../../utils/defaultExpenseData';
 
 interface BudgetModalProps {
@@ -40,10 +45,10 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
   useEffect(() => {
     const existing = budgets.find((b) => b.monthYear === activeMonthYear);
     if (existing) {
-      setOverallBudget(existing.overallBudget ? String(existing.overallBudget) : '');
+      setOverallBudget(existing.overallBudget ? formatIndianNumber(existing.overallBudget) : '');
       const strMap: Record<string, string> = {};
       Object.entries(existing.categoryBudgets || {}).forEach(([catId, val]) => {
-        strMap[catId] = val ? String(val) : '';
+        strMap[catId] = val ? formatIndianNumber(val) : '';
       });
       setCategoryBudgets(strMap);
     } else {
@@ -56,19 +61,19 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
   const handleCategoryBudgetChange = (catId: string, val: string) => {
     setCategoryBudgets((prev) => ({
       ...prev,
-      [catId]: val,
+      [catId]: formatIndianNumber(val),
     }));
   };
 
   const totalCategoryAllocated = Object.values(categoryBudgets).reduce((sum, val) => {
-    return sum + (parseFloat(val) || 0);
+    return sum + parseIndianNumber(val);
   }, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const overallNum = parseFloat(overallBudget) || 0;
+    const overallNum = parseIndianNumber(overallBudget);
     if (overallNum < 0) {
       setError('Please provide a valid overall budget amount.');
       return;
@@ -78,7 +83,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
       setIsSubmitting(true);
       const parsedCatBudgets: Record<string, number> = {};
       Object.entries(categoryBudgets).forEach(([catId, val]) => {
-        const num = parseFloat(val);
+        const num = parseIndianNumber(val);
         if (!isNaN(num) && num > 0) {
           parsedCatBudgets[catId] = roundCurrency(num);
         }
@@ -141,14 +146,13 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
                   ₹
                 </span>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   required
-                  placeholder="e.g. 15000"
+                  placeholder="e.g. 15,000"
                   value={overallBudget}
-                  onChange={(e) => setOverallBudget(e.target.value)}
-                  className="input-base pl-8 text-lg font-bold"
+                  onChange={(e) => setOverallBudget(formatIndianNumber(e.target.value))}
+                  className="input-base pl-8 text-lg font-bold tabular-nums"
                 />
               </div>
               <div className="flex items-center justify-between mt-2 text-[11px] text-zinc-500">
@@ -199,13 +203,12 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
                           ₹
                         </span>
                         <input
-                          type="number"
-                          step="1"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           placeholder="Limit"
                           value={currentVal}
                           onChange={(e) => handleCategoryBudgetChange(cat.id, e.target.value)}
-                          className="input-base pl-6 py-1.5 text-xs text-right font-medium"
+                          className="input-base pl-6 py-1.5 text-xs text-right font-medium tabular-nums"
                         />
                       </div>
                     </div>

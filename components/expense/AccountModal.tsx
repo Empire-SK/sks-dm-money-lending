@@ -3,6 +3,7 @@ import { X, CreditCard, Banknote, Smartphone, Landmark, AlertCircle } from 'luci
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { ExpenseAccount, AccountType } from '../../types/expense';
+import { formatIndianNumber, parseIndianNumber } from '../../utils/expenseCalculations';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     if (initialData) {
       setName(initialData.name);
       setType(initialData.type);
-      setOpeningBalance(String(initialData.openingBalance || 0));
+      setOpeningBalance(initialData.openingBalance ? formatIndianNumber(initialData.openingBalance) : '0');
       setColor(initialData.color || PRESET_COLORS[0]);
       setNotes(initialData.notes || '');
     } else {
@@ -63,7 +64,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       return;
     }
 
-    const numBalance = parseFloat(openingBalance);
+    const numBalance = parseIndianNumber(openingBalance);
     if (isNaN(numBalance)) {
       setError('Please provide a valid opening balance (e.g. 0).');
       return;
@@ -176,13 +177,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   ₹
                 </span>
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   required
-                  placeholder="0.00"
+                  placeholder="0"
                   value={openingBalance}
-                  onChange={(e) => setOpeningBalance(e.target.value)}
-                  className="input-base pl-8 font-semibold"
+                  onChange={(e) => setOpeningBalance(formatIndianNumber(e.target.value))}
+                  className="input-base pl-8 font-semibold tabular-nums"
                 />
               </div>
               <p className="text-[10px] text-zinc-500 mt-1">

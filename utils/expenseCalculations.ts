@@ -127,6 +127,16 @@ export const formatMonthYear = (monthYearStr: string): string => {
 };
 
 /**
+ * Checks whether an account is classified as a dedicated savings vault / emergency fund.
+ */
+export const isSavingsAccount = (acc?: ExpenseAccount | { name: string; isSavings?: boolean } | null): boolean => {
+  if (!acc) return false;
+  if (typeof acc.isSavings === 'boolean') return acc.isSavings;
+  const name = acc.name?.toLowerCase() || '';
+  return /saving|emergency|fixed[ -]?deposit|\bfd\b|\brd\b|\bppf\b|mutual[ -]?fund|vault|federal/i.test(name);
+};
+
+/**
  * Calculates current balances for all accounts across all transactions and salary records.
  * Formula:
  * Current Balance = Opening Balance
@@ -140,7 +150,13 @@ export const calculateAccountBalances = (
   accounts: ExpenseAccount[],
   transactions: ExpenseTransaction[],
   salaryRecords: SalaryRecord[] = []
-): { summaries: AccountBalanceSummary[]; totalAvailableBalance: number } => {
+): {
+  summaries: AccountBalanceSummary[];
+  totalAvailableBalance: number;
+  liquidSpendableBalance: number;
+  dedicatedSavingsBalance: number;
+  totalNetWorth: number;
+} => {
   // Check if salary records already have corresponding income transactions
   // To prevent double counting, if a transaction is marked with salaryRecordId or
   // if salary records are separate, we ensure income is attributed exactly once.
@@ -153,14 +169,16 @@ export const calculateAccountBalances = (
   const accountMap = new Map<string, AccountBalanceSummary>();
 
   accounts.forEach((acc) => {
+    const isSav = isSavingsAccount(acc);
     accountMap.set(acc.id, {
-      account: acc,
+      account: { ...acc, isSavings: isSav },
       currentBalance: roundCurrency(acc.openingBalance || 0),
       totalIncome: 0,
       totalExpenses: 0,
       totalRefunds: 0,
       transfersIn: 0,
       transfersOut: 0,
+      isSavings: isSav,
     });
   });
 
@@ -221,11 +239,37 @@ export const calculateAccountBalances = (
   });
 
   const summaries = Array.from(accountMap.values());
-  const totalAvailableBalance = roundCurrency(
+
+  // Liquid Spendable Balance = Balances in non-savings (daily spending) accounts
+  const liquidSpendableBalance = roundCurrency(
+    summaries
+      .filter((s) => !s.isSavings)
+      .reduce((sum, item) => sum + item.currentBalance, 0)
+  );
+
+  // Dedicated Savings Balance = Balances in dedicated savings/vault accounts
+  const dedicatedSavingsBalance = roundCurrency(
+    summaries
+      .filter((s) => s.isSavings)
+      .reduce((sum, item) => sum + item.currentBalance, 0)
+  );
+
+  // Total Net Worth = Liquid + Dedicated Savings across all accounts
+  const totalNetWorth = roundCurrency(
     summaries.reduce((sum, item) => sum + item.currentBalance, 0)
   );
 
-  return { summaries, totalAvailableBalance };
+  // Available Spendable Total: When user has dedicated savings accounts, available total is
+  // their liquid spendable balance so savings are not confused with spendable cash!
+  const totalAvailableBalance = dedicatedSavingsBalance > 0 ? liquidSpendableBalance : totalNetWorth;
+
+  return {
+    summaries,
+    totalAvailableBalance,
+    liquidSpendableBalance,
+    dedicatedSavingsBalance,
+    totalNetWorth,
+  };
 };
 
 /**
@@ -265,6 +309,7 @@ export const calculateMonthlySummary = (
   let independentIncome = 0;
   let totalExpenses = 0;
   let totalRefunds = 0;
+  let dedicatedSavings = 0;
   const categorySpending: Record<string, number> = {};
 
   monthTransactions.forEach((tx) => {
@@ -285,15 +330,34 @@ export const calculateMonthlySummary = (
       // Refunds reduce net expense in that category
       const catId = tx.categoryId || 'uncategorized';
       categorySpending[catId] = roundCurrency((categorySpending[catId] || 0) - amount);
+    } else if (tx.type === 'transfer') {
+      // Check if this transfer is tagged as dedicated savings / emergency / investment
+      const isExplicitGeneral = tx.transferCategory === 'general' || tx.isDedicatedSavings === false;
+      const isSavingsTx =
+        !isExplicitGeneral &&
+        (tx.isDedicatedSavings === true ||
+          tx.transferCategory === 'savings' ||
+          tx.transferCategory === 'emergency' ||
+          tx.transferCategory === 'investment' ||
+          /saving|emergency|investment|mutual[ -]?fund|fixed[ -]?deposit|\bfd\b|\brd\b|\bppf\b/i.test(
+            (tx.title || '') + ' ' + (tx.description || '') + ' ' + (tx.notes || '')
+          ));
+      if (isSavingsTx) {
+        dedicatedSavings = roundCurrency(dedicatedSavings + amount);
+      }
     }
-    // Transfers are excluded from income and expenses!
   });
 
   const otherIncome = roundCurrency(salaryOtherIncome + independentIncome);
   const totalIncome = roundCurrency(salaryIncome + bonusIncome + incentiveIncome + otherIncome);
 
   const netExpenses = roundCurrency(Math.max(0, totalExpenses - totalRefunds));
-  const monthlySavings = roundCurrency(totalIncome - netExpenses);
+
+  // Spendable liquid remaining from this month: income - net expenses - dedicated savings
+  const spendableBalance = roundCurrency(Math.max(0, totalIncome - netExpenses - dedicatedSavings));
+
+  // Total monthly savings: dedicated savings set aside + unspent spendable balance
+  const monthlySavings = roundCurrency(dedicatedSavings + spendableBalance);
 
   const savingsRate = totalIncome > 0 ? roundCurrency((monthlySavings / totalIncome) * 100) : 0;
   const expenseRate = totalIncome > 0 ? roundCurrency((netExpenses / totalIncome) * 100) : 0;
@@ -312,6 +376,8 @@ export const calculateMonthlySummary = (
     totalExpenses,
     totalRefunds,
     netExpenses,
+    dedicatedSavings,
+    spendableBalance,
     monthlySavings,
     savingsRate,
     expenseRate,

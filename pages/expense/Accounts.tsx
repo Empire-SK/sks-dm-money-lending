@@ -25,6 +25,9 @@ export const Accounts: React.FC = () => {
     accounts,
     accountSummaries,
     totalAvailableBalance,
+    liquidSpendableBalance,
+    dedicatedSavingsBalance,
+    totalNetWorth,
     transactions,
     handleDeleteAccount,
     handleEditAccount,
@@ -104,23 +107,32 @@ export const Accounts: React.FC = () => {
       </div>
 
       {/* Total Balance Banner */}
-      <div className="glass-card p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-emerald-500/20">
-        <div>
-          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            Total Combined Available Balance
-          </p>
-          <p className="text-2xl sm:text-4xl font-extrabold text-zinc-100 mt-1 tabular-nums">
-            {formatINR(totalAvailableBalance)}
-          </p>
-          <p className="text-[11px] sm:text-xs text-zinc-500 mt-1">
-            Real money carried across months from opening balances, earnings, expenses, transfers & refunds
-          </p>
-        </div>
+      <div className="glass-card p-4 sm:p-6 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-emerald-500/20">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-400">
+              Available Spendable Balance (Liquid)
+            </p>
+            <div className="flex items-baseline gap-3 mt-1 flex-wrap">
+              <span className="text-2xl sm:text-4xl font-extrabold text-zinc-100 tabular-nums">
+                {formatINR(liquidSpendableBalance)}
+              </span>
+              {dedicatedSavingsBalance > 0 && (
+                <span className="text-xs sm:text-sm font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                  + {formatINR(dedicatedSavingsBalance)} Dedicated Savings
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] sm:text-xs text-zinc-500 mt-1.5">
+              Spendable cash & primary accounts. Total combined wealth across all accounts: <strong className="text-zinc-300 font-bold">{formatINR(totalNetWorth)}</strong>
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] sm:text-xs font-semibold">
-            <ShieldCheck size={15} /> Reconciled & Isolated
-          </span>
+          <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] sm:text-xs font-semibold">
+              <ShieldCheck size={15} /> Reconciled & Isolated
+            </span>
+          </div>
         </div>
       </div>
 
@@ -130,6 +142,7 @@ export const Accounts: React.FC = () => {
           const acc = item.account;
           const isCash = acc.type === 'cash';
           const isUpi = acc.type === 'upi';
+          const isSavingsVault = item.isSavings || acc.isSavings;
 
           return (
             <div
@@ -138,7 +151,7 @@ export const Accounts: React.FC = () => {
             >
               <div>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 pr-2">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-white border shadow-md flex-shrink-0"
                       style={{
@@ -155,15 +168,26 @@ export const Accounts: React.FC = () => {
                         <Landmark size={20} />
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-xs sm:text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">
-                        {acc.name}
-                      </h3>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="text-xs sm:text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors truncate">
+                          {acc.name}
+                        </h3>
+                        {isSavingsVault ? (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                            Savings Vault
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Spending
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] sm:text-[11px] text-zinc-500 capitalize">{acc.type} Account</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button
                       onClick={() => handleEdit(acc)}
                       className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"

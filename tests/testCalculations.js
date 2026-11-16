@@ -20,6 +20,13 @@ const formatINR = (amount, showDecimals = false) => {
 
 const getMonthYear = (dateStr) => dateStr ? dateStr.slice(0, 7) : '';
 
+const isSavingsAccount = (acc) => {
+  if (!acc) return false;
+  if (typeof acc.isSavings === 'boolean') return acc.isSavings;
+  const name = acc.name?.toLowerCase() || '';
+  return /saving|emergency|fixed[ -]?deposit|\bfd\b|\brd\b|\bppf\b|mutual[ -]?fund|vault|federal/i.test(name);
+};
+
 // 2. Account balance calculation
 const calculateAccountBalances = (accounts, transactions, salaryRecords = []) => {
   const salaryLinkedTransactionIds = new Set(
@@ -28,14 +35,16 @@ const calculateAccountBalances = (accounts, transactions, salaryRecords = []) =>
 
   const accountMap = new Map();
   accounts.forEach((acc) => {
+    const isSav = isSavingsAccount(acc);
     accountMap.set(acc.id, {
-      account: acc,
+      account: { ...acc, isSavings: isSav },
       currentBalance: roundCurrency(acc.openingBalance || 0),
       totalIncome: 0,
       totalExpenses: 0,
       totalRefunds: 0,
       transfersIn: 0,
       transfersOut: 0,
+      isSavings: isSav,
     });
   });
 
@@ -92,10 +101,18 @@ const calculateAccountBalances = (accounts, transactions, salaryRecords = []) =>
   });
 
   const summaries = Array.from(accountMap.values());
-  const totalAvailableBalance = roundCurrency(
+  const liquidSpendableBalance = roundCurrency(
+    summaries.filter((s) => !s.isSavings).reduce((sum, item) => sum + item.currentBalance, 0)
+  );
+  const dedicatedSavingsBalance = roundCurrency(
+    summaries.filter((s) => s.isSavings).reduce((sum, item) => sum + item.currentBalance, 0)
+  );
+  const totalNetWorth = roundCurrency(
     summaries.reduce((sum, item) => sum + item.currentBalance, 0)
   );
-  return { summaries, totalAvailableBalance };
+  const totalAvailableBalance = dedicatedSavingsBalance > 0 ? liquidSpendableBalance : totalNetWorth;
+
+  return { summaries, totalAvailableBalance, liquidSpendableBalance, dedicatedSavingsBalance, totalNetWorth };
 };
 
 // 3. Monthly Financial Summary Calculation
@@ -119,6 +136,7 @@ const calculateMonthlySummary = (monthYear, transactions, salaryRecords = [], bu
   let independentIncome = 0;
   let totalExpenses = 0;
   let totalRefunds = 0;
+  let dedicatedSavings = 0;
   const categorySpending = {};
 
   monthTransactions.forEach((tx) => {
@@ -137,13 +155,29 @@ const calculateMonthlySummary = (monthYear, transactions, salaryRecords = [], bu
       totalRefunds = roundCurrency(totalRefunds + amount);
       const catId = tx.categoryId || 'uncategorized';
       categorySpending[catId] = roundCurrency((categorySpending[catId] || 0) - amount);
+    } else if (tx.type === 'transfer') {
+      const isExplicitGeneral = tx.transferCategory === 'general' || tx.isDedicatedSavings === false;
+      const isSavingsTx =
+        !isExplicitGeneral &&
+        (tx.isDedicatedSavings === true ||
+          tx.transferCategory === 'savings' ||
+          tx.transferCategory === 'emergency' ||
+          tx.transferCategory === 'investment' ||
+          /saving|emergency|investment|mutual[ -]?fund|fixed[ -]?deposit|\bfd\b|\brd\b|\bppf\b/i.test(
+            (tx.title || '') + ' ' + (tx.description || '') + ' ' + (tx.notes || '')
+          ));
+      if (isSavingsTx) {
+        dedicatedSavings = roundCurrency(dedicatedSavings + amount);
+      }
     }
   });
 
   const otherIncome = roundCurrency(salaryOtherIncome + independentIncome);
   const totalIncome = roundCurrency(salaryIncome + bonusIncome + incentiveIncome + otherIncome);
   const netExpenses = roundCurrency(Math.max(0, totalExpenses - totalRefunds));
-  const monthlySavings = roundCurrency(totalIncome - netExpenses);
+
+  const spendableBalance = roundCurrency(Math.max(0, totalIncome - netExpenses - dedicatedSavings));
+  const monthlySavings = roundCurrency(dedicatedSavings + spendableBalance);
 
   const savingsRate = totalIncome > 0 ? roundCurrency((monthlySavings / totalIncome) * 100) : 0;
   const expenseRate = totalIncome > 0 ? roundCurrency((netExpenses / totalIncome) * 100) : 0;
@@ -162,6 +196,8 @@ const calculateMonthlySummary = (monthYear, transactions, salaryRecords = [], bu
     totalExpenses,
     totalRefunds,
     netExpenses,
+    dedicatedSavings,
+    spendableBalance,
     monthlySavings,
     savingsRate,
     expenseRate,
@@ -286,14 +322,44 @@ upiSummary = balanceResult.summaries.find((s) => s.account.id === 'acc-upi');
 
 assert.strictEqual(cashSummary.currentBalance, 1500, 'Cash should decrease by 2000 -> 1500');
 assert.strictEqual(upiSummary.currentBalance, 28500, 'UPI should increase by 2000 -> 28500');
-assert.strictEqual(balanceResult.totalAvailableBalance, 30000, 'Total available balance should be completely unchanged by transfer');
+assert.strictEqual(balanceResult.totalAvailableBalance, 30000, 'Total available balance should be completely unchanged by general transfer');
 
 // Check that monthly summary does NOT count transfer as expense or income
 const janSummary = calculateMonthlySummary('2026-01', testTransactions, testSalary, { overallBudget: 15000 });
 assert.strictEqual(janSummary.totalIncome, 25000, 'Transfer must not change total income');
 assert.strictEqual(janSummary.netExpenses, 10000, 'Transfer must not change net expenses (1500 + 8500 = 10000)');
 assert.strictEqual(janSummary.monthlySavings, 15000, 'Savings should be 25000 - 10000 = 15000');
-console.log('✓ Transfer test passed: Cash decreased, UPI increased, Total unchanged, Monthly expenses unaffected.');
+console.log('✓ General transfer test passed: Cash decreased, UPI increased, Total unchanged, Monthly expenses unaffected.');
+
+// TEST 3.B: Dedicated Savings Transfer (e.g. Canara Bank to Federal Bank Savings)
+console.log('\n[Test 3.B] Dedicated Savings Transfer (Deducted from spendable available balance)');
+const savingsAccount = { id: 'acc-savings', name: 'Federal bank', type: 'bank', openingBalance: 0, isSavings: true };
+testAccounts.push(savingsAccount);
+
+const dedicatedSavingsTx = {
+  id: 'tx-savings-1',
+  type: 'transfer',
+  title: 'Savings',
+  amount: 4000,
+  accountId: 'acc-upi',
+  toAccountId: 'acc-savings',
+  transferCategory: 'savings',
+  isDedicatedSavings: true,
+  date: '2026-01-14',
+};
+testTransactions.push(dedicatedSavingsTx);
+
+const savingsBalanceResult = calculateAccountBalances(testAccounts, testTransactions, testSalary);
+assert.strictEqual(savingsBalanceResult.dedicatedSavingsBalance, 4000, 'Dedicated savings vault should have 4000');
+assert.strictEqual(savingsBalanceResult.liquidSpendableBalance, 26000, 'Liquid spendable balance should be 30,000 - 4,000 = 26,000');
+assert.strictEqual(savingsBalanceResult.totalAvailableBalance, 26000, 'Total spendable available should be 26,000');
+assert.strictEqual(savingsBalanceResult.totalNetWorth, 30000, 'Total net worth remains 30,000');
+
+const janSummaryWithSavings = calculateMonthlySummary('2026-01', testTransactions, testSalary, { overallBudget: 15000 });
+assert.strictEqual(janSummaryWithSavings.dedicatedSavings, 4000, 'Dedicated savings should be 4000');
+assert.strictEqual(janSummaryWithSavings.spendableBalance, 11000, 'Spendable remaining from salary should be 25000 - 10000 - 4000 = 11000');
+assert.strictEqual(janSummaryWithSavings.monthlySavings, 15000, 'Total monthly savings should be 4000 + 11000 = 15000');
+console.log('✓ Dedicated savings transfer test passed: ₹4,000 dedicated savings isolated, spendable cash = ₹11,000, total savings = ₹15,000.');
 
 // TEST 4: Refunds (Purchase returned)
 console.log('\n[Test 4] Refund Transactions');
@@ -364,9 +430,10 @@ assert.strictEqual(febSummary.savingsRate, 28, 'Savings rate = (7000/25000)*100 
 // But actual account balances reflect real money carried forward!
 balanceResult = calculateAccountBalances(testAccounts, testTransactions, testSalary);
 upiSummary = balanceResult.summaries.find((s) => s.account.id === 'acc-upi');
-// UPI history: 10000 + 25000 (Jan) - 8500 (Jan) + 2000 (Transfer) + 25000 (Feb) - 18000 (Feb) = 35500
-assert.strictEqual(upiSummary.currentBalance, 35500, 'Actual UPI balance reflects real cumulative money carried over');
-console.log('✓ Monthly reset test passed: Feb savings is 7000 (isolated), while actual account balance carried over to 35,500.');
+// UPI history: 10000 + 25000 (Jan) - 8500 (Jan) + 2000 (Transfer) - 4000 (Dedicated Savings to Federal) + 25000 (Feb) - 18000 (Feb) = 31500
+assert.strictEqual(upiSummary.currentBalance, 31500, 'Actual UPI balance reflects money after dedicated savings transfer');
+assert.strictEqual(balanceResult.totalNetWorth, 37500, 'Total combined wealth across accounts reflects 37,500 (Cash=2000, UPI=31500, Savings=4000)');
+console.log('✓ Monthly reset test passed: Feb savings is 7000 (isolated), while total wealth carried over to 37,500 (33,500 liquid + 4,000 savings vault).');
 
 // TEST 6: Budget Alerts (Section 9)
 console.log('\n[Test 6] Budget Alerts & Thresholds');

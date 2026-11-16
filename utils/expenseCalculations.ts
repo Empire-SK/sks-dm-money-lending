@@ -32,6 +32,80 @@ export const formatINR = (amount: number, showDecimals: boolean = false): string
 };
 
 /**
+ * Formats a raw number or input string with Indian comma grouping:
+ * 1000 -> 1,000
+ * 100000 -> 1,00,000
+ * 1000000 -> 10,00,000
+ * 10000000 -> 1,00,00,000
+ * Preserves decimal points and up to 2 decimal places.
+ */
+export const formatIndianNumber = (value: string | number | null | undefined): string => {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (!str) return '';
+
+  // Keep only digits and decimal point
+  const clean = str.replace(/[^0-9.]/g, '');
+  const parts = clean.split('.');
+  let integerPart = parts[0];
+  const decimalPart = parts.length > 1 ? '.' + parts.slice(1).join('').slice(0, 2) : '';
+
+  // Strip leading zeros unless it is just "0"
+  if (integerPart.length > 1 && integerPart.startsWith('0')) {
+    integerPart = integerPart.replace(/^0+/, '') || '0';
+  }
+
+  if (!integerPart && !decimalPart) return '';
+  if (!integerPart && decimalPart) return '0' + decimalPart;
+
+  // Indian numbering grouping: last 3 digits, then groups of 2 digits
+  let lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  if (otherNumbers !== '') lastThree = ',' + lastThree;
+  const formattedInteger = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+
+  return formattedInteger + decimalPart;
+};
+
+/**
+ * Parses an Indian formatted string (e.g. "1,00,000.50") back into a numeric float: 100000.5
+ */
+export const parseIndianNumber = (value: string | number | null | undefined): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  const clean = String(value).replace(/,/g, '').trim();
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : roundCurrency(num);
+};
+
+/**
+ * Returns human-readable Indian currency denomination for live zero-clarity preview:
+ * e.g. 100000 -> "1 Lakh"
+ * 1000000 -> "10 Lakhs"
+ * 10000000 -> "1 Crore"
+ * 25000 -> "25 Thousand"
+ */
+export const formatIndianWords = (num: number): string => {
+  if (!num || num <= 0) return '';
+  if (num >= 10000000) {
+    const cr = num / 10000000;
+    const formatted = cr >= 100 ? Math.round(cr) : Number(cr.toFixed(2));
+    return `${formatted} Crore${formatted > 1 ? 's' : ''}`;
+  }
+  if (num >= 100000) {
+    const lakh = num / 100000;
+    const formatted = lakh >= 100 ? Math.round(lakh) : Number(lakh.toFixed(2));
+    return `${formatted} Lakh${formatted > 1 ? 's' : ''}`;
+  }
+  if (num >= 1000) {
+    const k = num / 1000;
+    const formatted = k >= 100 ? Math.round(k) : Number(k.toFixed(2));
+    return `${formatted} Thousand`;
+  }
+  return '';
+};
+
+/**
  * Extracts 'YYYY-MM' from an ISO date string or 'YYYY-MM-DD' string.
  */
 export const getMonthYear = (dateStr: string): string => {

@@ -3,7 +3,13 @@ import { X, DollarSign, Calendar, AlertCircle, Coins, Award, Sparkles } from 'lu
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { SalaryRecord } from '../../types/expense';
-import { formatINR, roundCurrency } from '../../utils/expenseCalculations';
+import {
+  formatINR,
+  roundCurrency,
+  formatIndianNumber,
+  parseIndianNumber,
+  formatIndianWords,
+} from '../../utils/expenseCalculations';
 import { getInitializedDefaultAccounts } from '../../utils/defaultExpenseData';
 
 interface SalaryModalProps {
@@ -45,10 +51,10 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
   useEffect(() => {
     if (initialData) {
       setMonthYear(initialData.monthYear);
-      setBaseSalary(String(initialData.baseSalary || ''));
-      setBonus(initialData.bonus ? String(initialData.bonus) : '');
-      setIncentive(initialData.incentive ? String(initialData.incentive) : '');
-      setOtherIncome(initialData.otherIncome ? String(initialData.otherIncome) : '');
+      setBaseSalary(initialData.baseSalary ? formatIndianNumber(initialData.baseSalary) : '');
+      setBonus(initialData.bonus ? formatIndianNumber(initialData.bonus) : '');
+      setIncentive(initialData.incentive ? formatIndianNumber(initialData.incentive) : '');
+      setOtherIncome(initialData.otherIncome ? formatIndianNumber(initialData.otherIncome) : '');
       setAccountId(initialData.accountId || (activeAccounts[0]?.id ?? ''));
       setReceivedDate(initialData.receivedDate || new Date().toISOString().slice(0, 10));
       setNote(initialData.note || '');
@@ -67,17 +73,17 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
 
   // Calculated live total
   const calculatedTotal = roundCurrency(
-    (parseFloat(baseSalary) || 0) +
-    (parseFloat(bonus) || 0) +
-    (parseFloat(incentive) || 0) +
-    (parseFloat(otherIncome) || 0)
+    parseIndianNumber(baseSalary) +
+    parseIndianNumber(bonus) +
+    parseIndianNumber(incentive) +
+    parseIndianNumber(otherIncome)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const baseNum = parseFloat(baseSalary);
+    const baseNum = parseIndianNumber(baseSalary);
     if (isNaN(baseNum) || baseNum < 0) {
       setError('Please enter a valid base salary (0 or greater).');
       return;
@@ -110,9 +116,9 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
         userId: currentUser?.uid || 'default',
         monthYear,
         baseSalary: baseNum,
-        bonus: parseFloat(bonus) || 0,
-        incentive: parseFloat(incentive) || 0,
-        otherIncome: parseFloat(otherIncome) || 0,
+        bonus: parseIndianNumber(bonus),
+        incentive: parseIndianNumber(incentive),
+        otherIncome: parseIndianNumber(otherIncome),
         accountId: effectiveAccountId,
         receivedDate,
         note: note.trim() || undefined,
@@ -221,14 +227,13 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
                     ₹
                   </span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     required
-                    placeholder="25000"
+                    placeholder="25,000"
                     value={baseSalary}
-                    onChange={(e) => setBaseSalary(e.target.value)}
-                    className="input-base pl-8 font-semibold text-zinc-100"
+                    onChange={(e) => setBaseSalary(formatIndianNumber(e.target.value))}
+                    className="input-base pl-8 font-semibold text-zinc-100 tabular-nums"
                   />
                 </div>
               </div>
@@ -240,13 +245,12 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
                     ₹
                   </span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0"
                     value={bonus}
-                    onChange={(e) => setBonus(e.target.value)}
-                    className="input-base pl-8 font-semibold text-zinc-100"
+                    onChange={(e) => setBonus(formatIndianNumber(e.target.value))}
+                    className="input-base pl-8 font-semibold text-zinc-100 tabular-nums"
                   />
                 </div>
               </div>
@@ -261,13 +265,12 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
                     ₹
                   </span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0"
                     value={incentive}
-                    onChange={(e) => setIncentive(e.target.value)}
-                    className="input-base pl-8 font-semibold text-zinc-100"
+                    onChange={(e) => setIncentive(formatIndianNumber(e.target.value))}
+                    className="input-base pl-8 font-semibold text-zinc-100 tabular-nums"
                   />
                 </div>
               </div>
@@ -279,13 +282,12 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
                     ₹
                   </span>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="0"
                     value={otherIncome}
-                    onChange={(e) => setOtherIncome(e.target.value)}
-                    className="input-base pl-8 font-semibold text-zinc-100"
+                    onChange={(e) => setOtherIncome(formatIndianNumber(e.target.value))}
+                    className="input-base pl-8 font-semibold text-zinc-100 tabular-nums"
                   />
                 </div>
               </div>

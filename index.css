@@ -73,8 +73,47 @@ input, textarea, select {
   font-family: inherit;
 }
 
-/* ── Date input fix for dark mode ── */
-input[type="date"]::-webkit-calendar-picker-indicator {
+/* ── Universal Dropdown Arrow Fix for Entire System ── */
+select,
+select.input-base {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1rem 1rem;
+  padding-right: 2.5rem !important;
+  cursor: pointer;
+}
+
+select:focus,
+select.input-base:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+select:disabled,
+select.input-base:disabled {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e");
+  cursor: not-allowed;
+}
+
+/* Compact inline select (e.g., Year selector in headers/pills) */
+select.select-inline {
+  padding-right: 1.5rem !important;
+  background-position: right 0.25rem center;
+  background-size: 0.85rem 0.85rem;
+}
+
+select option {
+  background-color: #18181b;
+  color: #f4f4f5;
+  padding: 8px 12px;
+}
+
+/* ── Date and Month input fix for dark mode ── */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
   filter: invert(0.8);
   cursor: pointer;
 }

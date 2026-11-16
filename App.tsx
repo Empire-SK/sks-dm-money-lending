@@ -6,12 +6,21 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Borrowers from './pages/Borrowers';
 import BorrowerStatement from './pages/BorrowerStatement';
+import { ExpenseOverview } from './pages/expense/ExpenseOverview';
+import { Transactions } from './pages/expense/Transactions';
+import { Salary } from './pages/expense/Salary';
+import { Budgets } from './pages/expense/Budgets';
+import { Analytics } from './pages/expense/Analytics';
+import { Categories } from './pages/expense/Categories';
+import { Accounts } from './pages/expense/Accounts';
 import { Borrower } from './types';
 import { subscribeToAuthChanges, logout } from './services/authService';
 import {
   getBorrowers, addBorrower, updateBorrower, deleteBorrower,
   repayLoan, topUpLoan, getBorrower, deleteHistoryItem
 } from './services/firestoreService';
+import { AuthProvider } from './contexts/AuthContext';
+import { ExpenseProvider } from './contexts/ExpenseContext';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -139,14 +148,14 @@ const App: React.FC = () => {
         {/* Brand name */}
         <div className="text-center animate-fadeIn" style={{ animationDelay: '0.2s' }}>
           <h1 className="text-2xl font-bold bg-gradient-to-br from-zinc-100 to-zinc-400 bg-clip-text text-transparent tracking-tight">
-            SKS Lending
+            SKS Platform
           </h1>
           <p className="text-xs font-medium text-emerald-500/60 uppercase tracking-[0.2em] mt-2">
-            Secure Management
+            Secure Management & Financial Suite
           </p>
         </div>
 
-        {/* Improved Loader dots */}
+        {/* Loader dots */}
         <div className="flex items-center gap-2 mt-4">
           {[0, 1, 2].map(i => (
             <div
@@ -161,33 +170,47 @@ const App: React.FC = () => {
   }
 
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/" replace /> : <Login />
-        } />
+    <AuthProvider>
+      <ExpenseProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/login" element={
+              isAuthenticated ? <Navigate to="/" replace /> : <Login />
+            } />
 
-        {/* Public Statement Route */}
-        <Route path="/statement/:id" element={<BorrowerStatement />} />
+            {/* Public Statement Route */}
+            <Route path="/statement/:id" element={<BorrowerStatement />} />
 
-        <Route path="/" element={
-          isAuthenticated ? <Layout onLogout={handleLogout} /> : <Navigate to="/login" replace />
-        }>
-          <Route index element={<Dashboard borrowers={borrowers} />} />
-          <Route path="borrowers" element={
-            <Borrowers
-              borrowers={borrowers}
-              onAdd={handleAddBorrower}
-              onEdit={handleEditBorrower}
-              onDelete={handleDeleteBorrower}
-              onRepay={handleRepayment}
-              onTopUp={handleTopUp}
-              onDeleteHistory={handleDeleteHistory}
-            />
-          } />
-        </Route>
-      </Routes>
-    </HashRouter>
+            <Route path="/" element={
+              isAuthenticated ? <Layout onLogout={handleLogout} /> : <Navigate to="/login" replace />
+            }>
+              {/* Lending Management Routes */}
+              <Route index element={<Dashboard borrowers={borrowers} />} />
+              <Route path="borrowers" element={
+                <Borrowers
+                  borrowers={borrowers}
+                  onAdd={handleAddBorrower}
+                  onEdit={handleEditBorrower}
+                  onDelete={handleDeleteBorrower}
+                  onRepay={handleRepayment}
+                  onTopUp={handleTopUp}
+                  onDeleteHistory={handleDeleteHistory}
+                />
+              } />
+
+              {/* Personal Expense Manager Routes */}
+              <Route path="expense" element={<ExpenseOverview />} />
+              <Route path="expense/transactions" element={<Transactions />} />
+              <Route path="expense/salary" element={<Salary />} />
+              <Route path="expense/budgets" element={<Budgets />} />
+              <Route path="expense/analytics" element={<Analytics />} />
+              <Route path="expense/categories" element={<Categories />} />
+              <Route path="expense/accounts" element={<Accounts />} />
+            </Route>
+          </Routes>
+        </HashRouter>
+      </ExpenseProvider>
+    </AuthProvider>
   );
 };
 

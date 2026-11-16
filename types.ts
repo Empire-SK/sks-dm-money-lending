@@ -32,3 +32,5 @@ export interface User {
   email: string;
   name: string;
 }
+
+export * from './types/expense';

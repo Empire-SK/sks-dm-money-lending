@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, Banknote, Smartphone, Landmark, AlertCircle } from 'lucide-react';
+import { X, CreditCard, Banknote, Smartphone, Landmark, AlertCircle, PiggyBank, Wallet } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { ExpenseAccount, AccountType } from '../../types/expense';
@@ -32,6 +32,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('upi');
+  const [isSavings, setIsSavings] = useState(false);
   const [openingBalance, setOpeningBalance] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [notes, setNotes] = useState('');
@@ -42,12 +43,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     if (initialData) {
       setName(initialData.name);
       setType(initialData.type);
+      setIsSavings(
+        typeof initialData.isSavings === 'boolean'
+          ? initialData.isSavings
+          : /saving|emergency|deposit|fd|rd|vault|federal/i.test(initialData.name)
+      );
       setOpeningBalance(initialData.openingBalance ? formatIndianNumber(initialData.openingBalance) : '0');
       setColor(initialData.color || PRESET_COLORS[0]);
       setNotes(initialData.notes || '');
     } else {
       setName('');
       setType('upi');
+      setIsSavings(false);
       setOpeningBalance('0');
       setColor(PRESET_COLORS[0]);
       setNotes('');
@@ -76,6 +83,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         userId: currentUser?.uid || '',
         name: name.trim(),
         type,
+        isSavings,
         openingBalance: numBalance,
         color,
         notes: notes.trim() || undefined,
@@ -167,6 +175,48 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     <span className="capitalize">{t}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Account Purpose / Role */}
+            <div>
+              <label className="label-base">Account Purpose & Role</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSavings(false)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    !isSavings
+                      ? 'bg-emerald-600/15 text-emerald-300 border-emerald-500/40 ring-1 ring-emerald-500/30'
+                      : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-xs text-zinc-200">
+                    <Wallet size={14} className={!isSavings ? 'text-emerald-400' : 'text-zinc-500'} />
+                    <span>Daily Spending</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mt-0.5 leading-snug">
+                    Liquid account for day-to-day spending. Included in spendable balance.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSavings(true)}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    isSavings
+                      ? 'bg-purple-600/15 text-purple-300 border-purple-500/40 ring-1 ring-purple-500/30'
+                      : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-semibold text-xs text-zinc-200">
+                    <PiggyBank size={14} className={isSavings ? 'text-purple-400' : 'text-zinc-500'} />
+                    <span>Savings Vault</span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500 mt-0.5 leading-snug">
+                    Dedicated savings or emergency vault. Kept safe from spendable cash.
+                  </p>
+                </button>
               </div>
             </div>
 

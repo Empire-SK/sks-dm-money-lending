@@ -56,6 +56,9 @@ interface ExpenseContextType {
   // Calculations
   accountSummaries: AccountBalanceSummary[];
   totalAvailableBalance: number;
+  liquidSpendableBalance: number;
+  dedicatedSavingsBalance: number;
+  totalNetWorth: number;
   monthlySummary: MonthlyFinancialSummary;
   // Account Actions
   handleAddAccount: (acc: Omit<ExpenseAccount, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -170,7 +173,13 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [refreshData]);
 
   // Derived Account Balances (across all history)
-  const { summaries: accountSummaries, totalAvailableBalance } = useMemo(() => {
+  const {
+    summaries: accountSummaries,
+    totalAvailableBalance,
+    liquidSpendableBalance,
+    dedicatedSavingsBalance,
+    totalNetWorth,
+  } = useMemo(() => {
     return calculateAccountBalances(accounts, transactions, salaryRecords);
   }, [accounts, transactions, salaryRecords]);
 
@@ -407,6 +416,9 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSelectedMonthYear,
         accountSummaries,
         totalAvailableBalance,
+        liquidSpendableBalance,
+        dedicatedSavingsBalance,
+        totalNetWorth,
         monthlySummary,
         handleAddAccount,
         handleEditAccount,

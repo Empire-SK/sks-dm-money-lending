@@ -335,6 +335,21 @@ export const Transactions: React.FC = () => {
             const isIncome = tx.type === 'income';
             const isTransfer = tx.type === 'transfer';
             const isRefund = tx.type === 'refund';
+            const isDedicatedSavingsTransfer = isTransfer && (
+              tx.isDedicatedSavings ||
+              tx.transferCategory === 'savings' ||
+              tx.transferCategory === 'emergency' ||
+              tx.transferCategory === 'investment' ||
+              /saving|emergency|invest|deposit|vault/i.test(tx.title + ' ' + (tx.description || '') + ' ' + (tx.notes || ''))
+            );
+            const transferLabel =
+              tx.transferCategory === 'emergency'
+                ? 'Emergency Fund'
+                : tx.transferCategory === 'investment'
+                ? 'Investment'
+                : isDedicatedSavingsTransfer
+                ? 'Savings'
+                : 'Transfer';
 
             return (
               <div key={tx.id} className="p-3.5 space-y-2 hover:bg-zinc-800/30 transition-colors">
@@ -344,14 +359,17 @@ export const Transactions: React.FC = () => {
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{
-                        backgroundColor: `${isIncome ? '#10B981' : isTransfer ? '#3B82F6' : cat?.color || '#10B981'}15`,
-                        color: isIncome ? '#10B981' : isTransfer ? '#3B82F6' : cat?.color || '#10B981',
+                        backgroundColor: `${isIncome ? '#10B981' : isDedicatedSavingsTransfer ? '#8B5CF6' : isTransfer ? '#3B82F6' : cat?.color || '#10B981'}15`,
+                        color: isIncome ? '#10B981' : isDedicatedSavingsTransfer ? '#8B5CF6' : isTransfer ? '#3B82F6' : cat?.color || '#10B981',
                       }}
                     >
-                      <CategoryIcon name={isIncome ? 'TrendingUp' : isTransfer ? 'ArrowRightLeft' : cat?.icon || 'Tag'} size={14} />
+                      <CategoryIcon
+                        name={isIncome ? 'TrendingUp' : isDedicatedSavingsTransfer ? 'PiggyBank' : isTransfer ? 'ArrowRightLeft' : cat?.icon || 'Tag'}
+                        size={14}
+                      />
                     </div>
                     <span className="text-[11px] font-semibold text-zinc-300 truncate">
-                      {tx.categoryId === 'salary' ? 'Salary' : isTransfer ? 'Transfer' : isIncome ? 'Income' : cat?.name || 'General'}
+                      {tx.categoryId === 'salary' ? 'Salary' : isTransfer ? transferLabel : isIncome ? 'Income' : cat?.name || 'General'}
                     </span>
                     {tx.subcategory && !isIncome && !isTransfer && (
                       <span className="text-[10px] text-zinc-500 truncate">
@@ -471,6 +489,21 @@ export const Transactions: React.FC = () => {
                 const isIncome = tx.type === 'income';
                 const isTransfer = tx.type === 'transfer';
                 const isRefund = tx.type === 'refund';
+                const isDedicatedSavingsTransfer = isTransfer && (
+                  tx.isDedicatedSavings ||
+                  tx.transferCategory === 'savings' ||
+                  tx.transferCategory === 'emergency' ||
+                  tx.transferCategory === 'investment' ||
+                  /saving|emergency|invest|deposit|vault/i.test(tx.title + ' ' + (tx.description || '') + ' ' + (tx.notes || ''))
+                );
+                const transferLabel =
+                  tx.transferCategory === 'emergency'
+                    ? 'Emergency Fund'
+                    : tx.transferCategory === 'investment'
+                    ? 'Investment'
+                    : isDedicatedSavingsTransfer
+                    ? 'Savings'
+                    : 'Transfer';
 
                 return (
                   <tr
@@ -494,16 +527,30 @@ export const Transactions: React.FC = () => {
 
                     {/* Category */}
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 text-xs font-medium">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
+                          isDedicatedSavingsTransfer
+                            ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
+                            : 'bg-zinc-800/80 border-zinc-700/50 text-zinc-300'
+                        }`}
+                      >
                         <CategoryIcon
-                          name={isIncome ? 'TrendingUp' : isTransfer ? 'ArrowRightLeft' : cat?.icon || 'Tag'}
+                          name={
+                            isIncome
+                              ? 'TrendingUp'
+                              : isDedicatedSavingsTransfer
+                              ? 'PiggyBank'
+                              : isTransfer
+                              ? 'ArrowRightLeft'
+                              : cat?.icon || 'Tag'
+                          }
                           size={13}
                         />
                         <span>
                           {tx.categoryId === 'salary'
                             ? 'Salary'
                             : isTransfer
-                            ? 'Transfer'
+                            ? transferLabel
                             : isIncome
                             ? 'Income'
                             : cat?.name || 'General'}

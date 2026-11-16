@@ -11,10 +11,12 @@ import {
   RotateCcw,
   AlertCircle,
   Eye,
+  PiggyBank,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
-import { ExpenseTransaction, TransactionType } from '../../types/expense';
+import { ExpenseTransaction, TransactionType, TransferCategory } from '../../types/expense';
 import { uploadReceiptFile } from '../../services/receiptService';
 import {
   formatIndianNumber,
@@ -68,6 +70,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [subcategory, setSubcategory] = useState('');
   const [accountId, setAccountId] = useState('');
   const [toAccountId, setToAccountId] = useState('');
+  const [transferCategory, setTransferCategory] = useState<TransferCategory>('savings');
   const [originalTxId, setOriginalTxId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState('');
@@ -89,6 +92,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setSubcategory(initialData.subcategory || '');
       setAccountId(initialData.accountId || activeAccounts[0]?.id || '');
       setToAccountId(initialData.toAccountId || activeAccounts[1]?.id || '');
+      setTransferCategory(
+        initialData.transferCategory ||
+        (initialData.isDedicatedSavings || /saving|emergency|invest|deposit|vault/i.test(initialData.title) ? 'savings' : 'general')
+      );
       setOriginalTxId(initialData.originalTransactionId || '');
       setDate(initialData.date ? initialData.date.slice(0, 10) : new Date().toISOString().slice(0, 10));
       setDescription(initialData.description || '');
@@ -97,12 +104,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setReceiptName(initialData.receiptName || '');
     } else {
       setType(defaultType);
-      setTitle('');
+      setTitle(defaultType === 'transfer' ? 'Savings' : '');
       setAmount('');
       setCategoryId(activeCategories[0]?.id || '');
       setSubcategory('');
       setAccountId(activeAccounts[0]?.id || '');
       setToAccountId(activeAccounts[1]?.id || activeAccounts[0]?.id || '');
+      setTransferCategory('savings');
       setOriginalTxId('');
       setDate(new Date().toISOString().slice(0, 10));
       setDescription('');
@@ -175,9 +183,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     try {
       setIsSubmitting(true);
 
+      const isDedicated = type === 'transfer' ? transferCategory !== 'general' : false;
       const effectiveCategoryId =
         type === 'transfer'
-          ? 'transfer'
+          ? (transferCategory || 'savings')
           : type === 'income'
           ? 'income'
           : (categoryId || activeCategories[0]?.id || 'cat_default_1');
@@ -185,12 +194,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       const txPayload = {
         userId: currentUser?.uid || 'default',
         type,
-        title: title.trim() || `${type.charAt(0).toUpperCase() + type.slice(1)} transaction`,
+        title: title.trim() || (type === 'transfer' && transferCategory === 'savings' ? 'Savings' : `${type.charAt(0).toUpperCase() + type.slice(1)} transaction`),
         amount: numAmount,
         categoryId: effectiveCategoryId,
         subcategory: (type === 'transfer' || type === 'income') ? undefined : subcategory.trim() || undefined,
         accountId: effectiveAccountId,
         toAccountId: type === 'transfer' ? (toAccountId || activeAccounts[1]?.id) : undefined,
+        transferCategory: type === 'transfer' ? transferCategory : undefined,
+        isDedicatedSavings: type === 'transfer' ? isDedicated : undefined,
         originalTransactionId: type === 'refund' && originalTxId ? originalTxId : undefined,
         date,
         description: description.trim() || undefined,
@@ -436,24 +447,75 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </div>
                 </div>
 
-                {/* Transfer Guidance Callout */}
-                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs flex items-start gap-2.5">
-                  <ArrowRightLeft size={16} className="flex-shrink-0 text-blue-400 mt-0.5" />
-                  <div className="text-[11px] leading-relaxed">
-                    <span className="font-semibold text-blue-200">Transferring Between Multiple Accounts:</span> Select the sending account in <em>From Account</em> and the receiving account in <em>To Account</em> (e.g. Primary UPI ➔ Federal Bank). If your other bank account is not listed, click <button type="button" onClick={() => setIsAddAccountOpen(true)} className="underline font-semibold text-emerald-400 hover:text-emerald-300">+ New Bank / UPI</button> to add it instantly.
+                {/* Transfer Purpose / Category Dropdown */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                      <label className="label-base !mb-0">Transfer Category / Purpose *</label>
+                      {transferCategory !== 'general' && (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/25 inline-flex items-center gap-1">
+                          <PiggyBank size={12} /> Savings
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      value={transferCategory}
+                      onChange={(e) => {
+                        const val = e.target.value as TransferCategory;
+                        setTransferCategory(val);
+                        if (!title || title === 'Transfer' || title === 'Savings' || title === 'Emergency Fund' || title === 'Investment') {
+                          if (val === 'savings') setTitle('Savings');
+                          else if (val === 'emergency') setTitle('Emergency Fund');
+                          else if (val === 'investment') setTitle('Investment');
+                          else setTitle('Account Transfer');
+                        }
+                      }}
+                      required
+                      className="input-base font-semibold"
+                    >
+                      <option value="savings" className="bg-zinc-900 text-zinc-100 py-1">
+                        💰 Savings (Dedicated Savings Vault)
+                      </option>
+                      <option value="emergency" className="bg-zinc-900 text-zinc-100 py-1">
+                        🛡️ Emergency Fund
+                      </option>
+                      <option value="investment" className="bg-zinc-900 text-zinc-100 py-1">
+                        📈 Investment / Mutual Funds
+                      </option>
+                      <option value="general" className="bg-zinc-900 text-zinc-100 py-1">
+                        🔄 General Transfer (Between Regular Accounts)
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="label-base">Date *</label>
+                    <input
+                      type="date"
+                      required
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="input-base"
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <label className="label-base">Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="input-base"
-                  />
-                </div>
+                {/* Savings Callout / Guidance */}
+                {transferCategory !== 'general' ? (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-start gap-2.5">
+                    <PiggyBank size={16} className="flex-shrink-0 text-emerald-400 mt-0.5" />
+                    <div className="text-[11px] leading-relaxed">
+                      <span className="font-semibold text-emerald-200">Deducted from Spendable Available Balance:</span> This transfer is marked as <strong className="text-emerald-300 capitalize">{transferCategory}</strong>. It will be deducted from your liquid spendable balance and counted separately as your <strong>Monthly Savings</strong>.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs flex items-start gap-2.5">
+                    <ArrowRightLeft size={16} className="flex-shrink-0 text-blue-400 mt-0.5" />
+                    <div className="text-[11px] leading-relaxed">
+                      <span className="font-semibold text-blue-200">Regular Account Transfer:</span> Moves liquidity between your spendable accounts without affecting your monthly savings or spendable balance.
+                    </div>
+                  </div>
+                )}
               </div>
             ) : type === 'income' ? (
               /* Income: only Credited To Account and Date (no unnecessary expense category!) */

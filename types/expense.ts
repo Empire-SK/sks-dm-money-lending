@@ -2,6 +2,8 @@ export type TransactionType = 'income' | 'expense' | 'transfer' | 'refund';
 
 export type AccountType = 'cash' | 'upi' | 'bank' | 'card' | 'other';
 
+export type TransferCategory = 'savings' | 'emergency' | 'investment' | 'general';
+
 export interface ExpenseAccount {
   id: string;
   userId: string;
@@ -11,6 +13,7 @@ export interface ExpenseAccount {
   color?: string;
   icon?: string;
   notes?: string;
+  isSavings?: boolean; // True if dedicated savings / emergency vault
   createdAt: string;
   updatedAt?: string;
 }
@@ -52,6 +55,8 @@ export interface ExpenseTransaction {
   subcategory?: string;
   accountId: string; // Primary/source account
   toAccountId?: string; // For transfers: destination account
+  transferCategory?: TransferCategory; // 'savings' | 'emergency' | 'investment' | 'general'
+  isDedicatedSavings?: boolean; // True if deducted from daily available spendable balance
   originalTransactionId?: string; // For refunds: reference to original transaction
   date: string; // 'YYYY-MM-DD' or ISO string
   description?: string;
@@ -81,6 +86,7 @@ export interface AccountBalanceSummary {
   totalRefunds: number;
   transfersIn: number;
   transfersOut: number;
+  isSavings?: boolean;
 }
 
 export interface MonthlyFinancialSummary {
@@ -93,7 +99,9 @@ export interface MonthlyFinancialSummary {
   totalExpenses: number;
   totalRefunds: number;
   netExpenses: number;
-  monthlySavings: number;
+  dedicatedSavings: number; // Dedicated savings transferred this month (e.g. ₹4,000)
+  spendableBalance: number; // Liquid spendable remaining: totalIncome - netExpenses - dedicatedSavings (e.g. ₹2,550)
+  monthlySavings: number; // Total savings: dedicatedSavings + max(0, spendableBalance) (e.g. ₹6,550)
   savingsRate: number; // percentage (0 - 100)
   expenseRate: number; // percentage (0 - 100)
   overallBudget: number;

@@ -74,6 +74,9 @@ export const ExpenseOverview: React.FC = () => {
     monthlySummary,
     accountSummaries,
     totalAvailableBalance,
+    liquidSpendableBalance,
+    dedicatedSavingsBalance,
+    totalNetWorth,
   } = useExpense();
 
   const [filterPeriod, setFilterPeriod] = useState<
@@ -259,13 +262,19 @@ export const ExpenseOverview: React.FC = () => {
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
-                Available Total
+                Available to Spend
               </p>
               <p className="text-lg sm:text-2xl font-bold mt-1 text-sky-400 tabular-nums truncate">
-                {formatINR(totalAvailableBalance)}
+                {formatINR(dedicatedSavingsBalance > 0 ? liquidSpendableBalance : totalAvailableBalance)}
               </p>
               <div className="mt-1.5 text-[10px] sm:text-[11px] text-zinc-400 space-y-0.5 hidden sm:block truncate">
-                <p>Cash + UPI</p>
+                {dedicatedSavingsBalance > 0 ? (
+                  <p title={`Total across all accounts: ${formatINR(totalNetWorth)}`}>
+                    Liquid Cash & Bank <span className="text-zinc-500 text-[10px]">(Total: {formatINR(totalNetWorth)})</span>
+                  </p>
+                ) : (
+                  <p>Cash + UPI</p>
+                )}
               </div>
             </div>
             <div className="p-1.5 sm:p-2.5 rounded-xl border bg-sky-500/10 text-sky-400 border-sky-500/20 flex-shrink-0 ml-1.5">
@@ -279,18 +288,33 @@ export const ExpenseOverview: React.FC = () => {
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
-                Monthly Savings
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">
+                  Monthly Savings
+                </p>
+                {monthlySummary.dedicatedSavings > 0 && (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                    Vault
+                  </span>
+                )}
+              </div>
               <p
                 className={`text-lg sm:text-2xl font-bold mt-1 tabular-nums truncate ${
                   monthlySummary.monthlySavings >= 0 ? 'text-emerald-400' : 'text-rose-400'
                 }`}
               >
-                {formatINR(monthlySummary.monthlySavings)}
+                {monthlySummary.dedicatedSavings > 0
+                  ? formatINR(monthlySummary.dedicatedSavings)
+                  : formatINR(monthlySummary.monthlySavings)}
               </p>
               <div className="mt-1.5 text-[10px] sm:text-[11px] text-zinc-400 hidden sm:block">
-                <p>Rate: <span className="font-semibold text-emerald-400">{monthlySummary.savingsRate}%</span></p>
+                {monthlySummary.dedicatedSavings > 0 ? (
+                  <p className="text-purple-300/90 text-[10px] truncate" title={`Dedicated Vault: ${formatINR(monthlySummary.dedicatedSavings)} + Unspent Balance: ${formatINR(monthlySummary.spendableBalance)}`}>
+                    + {formatINR(monthlySummary.spendableBalance)} unspent (Total: {formatINR(monthlySummary.monthlySavings)})
+                  </p>
+                ) : (
+                  <p>Rate: <span className="font-semibold text-emerald-400">{monthlySummary.savingsRate}%</span></p>
+                )}
               </div>
             </div>
             <div className="p-1.5 sm:p-2.5 rounded-xl border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 flex-shrink-0 ml-1.5">
@@ -360,43 +384,57 @@ export const ExpenseOverview: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-          {accountSummaries.map((summary) => (
-            <div
-              key={summary.account.id}
-              className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/80 hover:border-zinc-700 transition-all flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white border flex-shrink-0"
-                  style={{
-                    backgroundColor: `${summary.account.color || '#10B981'}15`,
-                    borderColor: `${summary.account.color || '#10B981'}30`,
-                    color: summary.account.color || '#10B981',
-                  }}
-                >
-                  {summary.account.type === 'cash' ? (
-                    <Banknote size={16} />
-                  ) : summary.account.type === 'upi' ? (
-                    <Smartphone size={16} />
-                  ) : (
-                    <CreditCard size={16} />
-                  )}
+          {accountSummaries.map((summary) => {
+            const isSavingsVault = summary.isSavings || summary.account.isSavings;
+            return (
+              <div
+                key={summary.account.id}
+                className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800/80 hover:border-zinc-700 transition-all flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white border flex-shrink-0"
+                    style={{
+                      backgroundColor: `${summary.account.color || '#10B981'}15`,
+                      borderColor: `${summary.account.color || '#10B981'}30`,
+                      color: summary.account.color || '#10B981',
+                    }}
+                  >
+                    {summary.account.type === 'cash' ? (
+                      <Banknote size={16} />
+                    ) : summary.account.type === 'upi' ? (
+                      <Smartphone size={16} />
+                    ) : (
+                      <CreditCard size={16} />
+                    )}
+                  </div>
+                  <div className="truncate min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-xs font-semibold text-zinc-200 truncate">{summary.account.name}</p>
+                      {isSavingsVault ? (
+                        <span className="px-1 py-0.2 rounded text-[8px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                          Vault
+                        </span>
+                      ) : (
+                        <span className="px-1 py-0.2 rounded text-[8px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Spending
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-zinc-500 capitalize">{summary.account.type}</p>
+                  </div>
                 </div>
-                <div className="truncate">
-                  <p className="text-xs font-semibold text-zinc-200 truncate">{summary.account.name}</p>
-                  <p className="text-[10px] text-zinc-500 capitalize">{summary.account.type}</p>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs sm:text-sm font-bold text-zinc-100 tabular-nums">
+                    {formatINR(summary.currentBalance)}
+                  </p>
+                  <p className="text-[10px] text-zinc-500">
+                    Open: {formatINR(summary.account.openingBalance)}
+                  </p>
                 </div>
               </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs sm:text-sm font-bold text-zinc-100 tabular-nums">
-                  {formatINR(summary.currentBalance)}
-                </p>
-                <p className="text-[10px] text-zinc-500">
-                  Open: {formatINR(summary.account.openingBalance)}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

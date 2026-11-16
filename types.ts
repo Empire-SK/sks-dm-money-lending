@@ -8,6 +8,7 @@ export interface PaymentHistory {
 
 export interface Borrower {
   id: string;
+  userId?: string;
   name: string;
   phone: string;
   email: string;

@@ -270,7 +270,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="input-base pl-10 w-full appearance-none cursor-pointer bg-zinc-900/60 text-sm"
+            className="input-base pl-10 w-full cursor-pointer bg-zinc-900/60 text-sm"
           >
             <option value="recent_activity">Recent Activity First</option>
             <option value="highest_pending">Highest Pending First</option>

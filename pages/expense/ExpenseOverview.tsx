@@ -129,7 +129,7 @@ export const ExpenseOverview: React.FC = () => {
 
   // Category Breakdown for the selected month
   const categoryPieData = useMemo(() => {
-    return categories
+    const list = categories
       .map((cat) => {
         const spent = monthlySummary.categorySpending[cat.id] || 0;
         return {
@@ -140,6 +140,20 @@ export const ExpenseOverview: React.FC = () => {
         };
       })
       .filter((item) => item.value > 0);
+
+    // Include any spending where category ID is not in categories array (e.g. cat_sip)
+    Object.entries(monthlySummary.categorySpending).forEach(([catId, spent]) => {
+      if (spent > 0 && !categories.some((c) => c.id === catId)) {
+        list.push({
+          name: catId === 'cat_sip' ? 'Investments & SIP' : catId,
+          value: spent,
+          color: '#8B5CF6',
+          icon: 'TrendingUp',
+        });
+      }
+    });
+
+    return list;
   }, [categories, monthlySummary.categorySpending]);
 
   // Daily spending data for current selected month

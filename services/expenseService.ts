@@ -23,6 +23,14 @@ import {
   getInitializedDefaultCategories,
 } from '../utils/defaultExpenseData';
 import { roundCurrency } from '../utils/expenseCalculations';
+import {
+  ADMIN_BASELINE_ACCOUNTS,
+  ADMIN_BASELINE_SALARY,
+  ADMIN_BASELINE_TRANSACTIONS,
+  getBaselineAccountsForUser,
+  getBaselineSalaryForUser,
+  getBaselineTransactionsForUser,
+} from '../utils/adminBaselineData';
 
 const ACCOUNTS_COLLECTION = 'expense_accounts';
 const CATEGORIES_COLLECTION = 'expense_categories';
@@ -65,15 +73,28 @@ export const isUserAdmin = (userEmail?: string | null): boolean => {
 };
 
 /**
+ * Check if the user is eligible for baseline financial data recovery (admin or amil accounts).
+ */
+export const isEligibleForBaselineRecovery = (userEmail?: string | null): boolean => {
+  const email = (userEmail || auth?.currentUser?.email || '').toLowerCase().trim();
+  return (
+    isUserAdmin(email) ||
+    email === 'amil@sksdm.com' ||
+    email.startsWith('amil@') ||
+    email.includes('amil')
+  );
+};
+
+/**
  * Recovers legacy data across candidate storage keys.
- * Exclusively active for admin accounts to ensure 0 data loss during multi-tenant migration.
+ * Active for admin and amil accounts to ensure 0 data loss during multi-tenant migration.
  */
 export const recoverLegacyData = <T>(
   prefix: string,
   userEmail?: string | null
 ): T | null => {
   if (typeof window === 'undefined') return null;
-  if (!isUserAdmin(userEmail)) return null;
+  if (!isEligibleForBaselineRecovery(userEmail)) return null;
 
   const candidateKeys = [
     `${prefix}_default`,
@@ -89,8 +110,7 @@ export const recoverLegacyData = <T>(
       if (
         k &&
         k.startsWith(prefix) &&
-        !candidateKeys.includes(k) &&
-        !k.includes('2dhsrH3CxfVogBxZemmBhMy8Dgm1') // Never pull from amil's clean partition
+        !candidateKeys.includes(k)
       ) {
         candidateKeys.push(k);
       }
@@ -117,9 +137,7 @@ export const recoverLegacyData = <T>(
 /**
  * Multi-tenant storage key resolver:
  * Ensures complete separation of user workspaces.
- * If user is admin (admin@sksdm.com, etc.), it automatically restores legacy data to their scoped storage.
- * For ANY other user (e.g. amil@sksdm.com), they have an independent storage space based on their UID
- * and NEVER touch '_default' or see any other user's records.
+ * Auto-migrates legacy data to user scoped keys if empty.
  */
 export const getUserScopedKey = (
   prefix: string,
@@ -133,13 +151,14 @@ export const getUserScopedKey = (
       : authUser?.uid || null;
 
   const isAdmin = isUserAdmin(userEmail || authUser?.email);
+  const isEligible = isEligibleForBaselineRecovery(userEmail || authUser?.email);
 
   // If no user is authenticated, use unauthenticated partition
   const safeId = effectiveUid ? effectiveUid : isAdmin ? 'admin' : 'unauthenticated';
   const scopedKey = `${prefix}_${safeId}`;
 
-  // Auto-migrate legacy data ONLY for admin users if scopedKey is currently empty
-  if (typeof window !== 'undefined' && isAdmin && safeId !== 'unauthenticated') {
+  // Auto-migrate legacy data for eligible users if scopedKey is currently empty
+  if (typeof window !== 'undefined' && isEligible && safeId !== 'unauthenticated') {
     try {
       const existing = localStorage.getItem(scopedKey);
       if (!existing || existing === '[]' || existing === '{}') {
@@ -149,7 +168,7 @@ export const getUserScopedKey = (
         }
       }
     } catch (e) {
-      console.warn('Migration to admin scoped key warning:', e);
+      console.warn('Migration to scoped key warning:', e);
     }
   }
 
@@ -167,27 +186,31 @@ export const getExpenseAccounts = async (
   const localKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
   let localAccounts = getLocalData<ExpenseAccount[]>(localKey, []);
 
-  // For admin: if current local accounts is empty or only has 3 fresh zeroed defaults,
-  // restore real legacy accounts (Canara Bank, Federal Bank, etc.) if available
-  if (isUserAdmin(userEmail)) {
-    const isOnlyFreshZeroDefaults =
-      localAccounts.length === 3 &&
-      localAccounts.every(
-        (a) => (a.openingBalance === 0 || !a.openingBalance) && a.id.startsWith('acc_default_')
-      );
+  const isEligible = isEligibleForBaselineRecovery(userEmail);
 
-    if (localAccounts.length === 0 || isOnlyFreshZeroDefaults) {
-      const legacyAccounts = recoverLegacyData<ExpenseAccount[]>('sks_expense_accounts', userEmail);
-      if (legacyAccounts && legacyAccounts.length > 0) {
-        const hasRealAccounts = legacyAccounts.some(
-          (a) => (a.openingBalance && a.openingBalance > 0) || !a.id.startsWith('acc_default_')
-        );
-        if (hasRealAccounts) {
-          localAccounts = legacyAccounts;
-          setLocalData(localKey, localAccounts);
-        }
-      }
+  // Check if current local accounts is empty, only has the 3 fresh zero-balance defaults,
+  // or is missing Canara Bank from the historical dataset
+  const isOnlyFreshZeroDefaults =
+    localAccounts.length === 3 &&
+    localAccounts.every(
+      (a) => (a.openingBalance === 0 || !a.openingBalance) && a.id.startsWith('acc_default_')
+    );
+  const lacksCanara = !localAccounts.some((a) => a.name.toLowerCase().includes('canara'));
+
+  if (isEligible && (localAccounts.length === 0 || isOnlyFreshZeroDefaults || lacksCanara)) {
+    const legacyAccounts = recoverLegacyData<ExpenseAccount[]>('sks_expense_accounts', userEmail);
+    if (
+      legacyAccounts &&
+      legacyAccounts.length > 0 &&
+      legacyAccounts.some(
+        (a) => a.name.toLowerCase().includes('canara') || (a.openingBalance && a.openingBalance > 0)
+      )
+    ) {
+      localAccounts = legacyAccounts;
+    } else {
+      localAccounts = getBaselineAccountsForUser(userId || 'default');
     }
+    setLocalData(localKey, localAccounts);
   }
 
   try {
@@ -210,9 +233,11 @@ export const getExpenseAccounts = async (
     console.warn('Firestore getExpenseAccounts failed, falling back to local:', err);
   }
 
-  // Fallback to local accounts or initial defaults
+  // Fallback to local accounts or baseline defaults
   if (localAccounts.length > 0) return localAccounts;
-  const defaults = getInitializedDefaultAccounts(userId || 'default');
+  const defaults = isEligible
+    ? getBaselineAccountsForUser(userId || 'default')
+    : getInitializedDefaultAccounts(userId || 'default');
   setLocalData(localKey, defaults);
   return defaults;
 };
@@ -313,12 +338,27 @@ export const getExpenseCategories = async (
   const localKey = getUserScopedKey('sks_expense_categories', userId, userEmail);
   let localCats = getLocalData<ExpenseCategory[]>(localKey, []);
 
-  if (isUserAdmin(userEmail) && localCats.length === 0) {
+  if (isEligibleForBaselineRecovery(userEmail) && localCats.length === 0) {
     const legacy = recoverLegacyData<ExpenseCategory[]>('sks_expense_categories', userEmail);
     if (legacy && legacy.length > 0) {
       localCats = legacy;
       setLocalData(localKey, localCats);
     }
+  }
+
+  // Ensure cat_sip is present for SIP transaction recognition
+  if (localCats.length > 0 && !localCats.some((c) => c.id === 'cat_sip')) {
+    localCats.push({
+      id: 'cat_sip',
+      userId: userId || 'default',
+      name: 'Investments & SIP',
+      icon: 'TrendingUp',
+      color: '#8B5CF6',
+      subcategories: ['SIP', 'Mutual Funds', 'Stocks'],
+      isDefault: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    setLocalData(localKey, localCats);
   }
 
   try {
@@ -437,14 +477,21 @@ export const getSalaryRecords = async (
   const localKey = getUserScopedKey('sks_salary_records', userId, userEmail);
   let localRecords = getLocalData<SalaryRecord[]>(localKey, []);
 
-  if (isUserAdmin(userEmail) && localRecords.length === 0) {
+  const isEligible = isEligibleForBaselineRecovery(userEmail);
+  const hasRealSalary = localRecords.length > 0 && localRecords.some((s) => (s.totalIncome || 0) > 0);
+
+  if (isEligible && !hasRealSalary) {
     const legacy =
       recoverLegacyData<SalaryRecord[]>('sks_salary_records', userEmail) ||
       recoverLegacyData<SalaryRecord[]>('sks_expense_salaries', userEmail);
     if (legacy && legacy.length > 0) {
       localRecords = legacy;
-      setLocalData(localKey, localRecords);
+    } else {
+      const accKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
+      const existingAccs = getLocalData<ExpenseAccount[]>(accKey, []);
+      localRecords = getBaselineSalaryForUser(userId || 'default', existingAccs);
     }
+    setLocalData(localKey, localRecords);
   }
 
   try {
@@ -611,12 +658,19 @@ export const getExpenseTransactions = async (
   const localKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
   let localTxs = getLocalData<ExpenseTransaction[]>(localKey, []);
 
-  if (isUserAdmin(userEmail) && localTxs.length === 0) {
+  const isEligible = isEligibleForBaselineRecovery(userEmail);
+  const hasRealTxs = localTxs.length > 0;
+
+  if (isEligible && !hasRealTxs) {
     const legacyTxs = recoverLegacyData<ExpenseTransaction[]>('sks_expense_transactions', userEmail);
     if (legacyTxs && legacyTxs.length > 0) {
       localTxs = legacyTxs;
-      setLocalData(localKey, localTxs);
+    } else {
+      const accKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
+      const existingAccs = getLocalData<ExpenseAccount[]>(accKey, []);
+      localTxs = getBaselineTransactionsForUser(userId || 'default', existingAccs);
     }
+    setLocalData(localKey, localTxs);
   }
 
   try {
@@ -717,7 +771,7 @@ export const getMonthlyBudgets = async (
   const localKey = getUserScopedKey('sks_expense_budgets', userId, userEmail);
   let localBudgets = getLocalData<MonthlyBudget[]>(localKey, []);
 
-  if (isUserAdmin(userEmail) && localBudgets.length === 0) {
+  if (isEligibleForBaselineRecovery(userEmail) && localBudgets.length === 0) {
     const legacy = recoverLegacyData<MonthlyBudget[]>('sks_expense_budgets', userEmail);
     if (legacy && legacy.length > 0) {
       localBudgets = legacy;

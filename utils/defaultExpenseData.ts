@@ -72,6 +72,13 @@ export const DEFAULT_CATEGORIES: Omit<ExpenseCategory, 'id' | 'userId' | 'create
     isDefault: true,
   },
   {
+    name: 'Investments & SIP',
+    icon: 'TrendingUp',
+    color: '#8B5CF6', // violet
+    subcategories: ['SIP', 'Mutual Funds', 'Stocks'],
+    isDefault: true,
+  },
+  {
     name: 'Other',
     icon: 'MoreHorizontal',
     color: '#71717A', // zinc
@@ -108,12 +115,24 @@ export const DEFAULT_ACCOUNTS: Omit<ExpenseAccount, 'id' | 'userId' | 'createdAt
 ];
 
 export const getInitializedDefaultCategories = (userId: string = 'default'): ExpenseCategory[] => {
-  return DEFAULT_CATEGORIES.map((c, index) => ({
+  const list = DEFAULT_CATEGORIES.map((c, index) => ({
     ...c,
     id: `cat_default_${index + 1}`,
     userId,
     createdAt: '2026-01-01T00:00:00.000Z',
   }));
+  // Also provide cat_sip for baseline SIP transactions
+  list.push({
+    id: 'cat_sip',
+    userId,
+    name: 'Investments & SIP',
+    icon: 'TrendingUp',
+    color: '#8B5CF6',
+    subcategories: ['SIP', 'Mutual Funds', 'Stocks'],
+    isDefault: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  });
+  return list;
 };
 
 export const getInitializedDefaultAccounts = (userId: string = 'default'): ExpenseAccount[] => {

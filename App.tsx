@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { TrendingUp } from 'lucide-react';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -184,7 +184,7 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <ExpenseProvider key={currentUser?.uid || 'guest'}>
-        <HashRouter>
+        <BrowserRouter>
           <Routes>
             <Route path="/login" element={
               isAuthenticated ? <Navigate to="/" replace /> : <Login />
@@ -220,7 +220,7 @@ const App: React.FC = () => {
               <Route path="expense/accounts" element={<Accounts />} />
             </Route>
           </Routes>
-        </HashRouter>
+        </BrowserRouter>
       </ExpenseProvider>
     </AuthProvider>
   );

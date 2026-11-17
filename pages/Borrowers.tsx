@@ -135,7 +135,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
   const handleOpenHistory = (b: Borrower) => { setHistoryBorrowerId(b.id); setIsHistoryOpen(true); };
 
   const handleShareStatement = (b: Borrower) => {
-    const url = `${window.location.origin}/#/statement/${b.id}`;
+    const url = `${window.location.origin}/statement/${b.id}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopiedId(b.id);
       setTimeout(() => setCopiedId(null), 2000);

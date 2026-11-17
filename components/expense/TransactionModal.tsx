@@ -21,7 +21,6 @@ import { uploadReceiptFile } from '../../services/receiptService';
 import {
   formatIndianNumber,
   parseIndianNumber,
-  formatIndianWords,
 } from '../../utils/expenseCalculations';
 import { AccountModal } from './AccountModal';
 import {
@@ -120,9 +119,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     }
     setError('');
   }, [initialData, defaultType, isOpen, activeCategories, activeAccounts]);
-
-  const parsedAmount = useMemo(() => parseIndianNumber(amount), [amount]);
-  const amountInWords = useMemo(() => formatIndianWords(parsedAmount), [parsedAmount]);
 
   // Selected category subcategories
   const selectedCategoryObj = activeCategories.find((c) => c.id === categoryId) || activeCategories[0];
@@ -334,14 +330,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             {/* Amount and Title */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <div className="flex items-center justify-between mb-1 sm:mb-1.5">
-                  <label className="label-base !mb-0">Amount (₹) *</label>
-                  {parsedAmount > 0 && (
-                    <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                      {amountInWords ? `₹${amount} (${amountInWords})` : `₹${amount}`}
-                    </span>
-                  )}
-                </div>
+                <label className="label-base">Amount (₹) *</label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500 font-semibold">
                     ₹

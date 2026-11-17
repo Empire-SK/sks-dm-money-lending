@@ -18,6 +18,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { ToastContainer } from './expense/ToastContainer';
+import { useAuth } from '../contexts/AuthContext';
+import { isUserAdmin } from '../services/expenseService';
 
 interface LayoutProps {
   onLogout: () => void;
@@ -26,6 +28,8 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(true);
+  const { currentUser } = useAuth();
+  const isAdmin = isUserAdmin(currentUser?.email);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -182,6 +186,18 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
 
         {/* Logout & Footer */}
         <div className="p-3 border-t border-zinc-800/80 space-y-2">
+          {currentUser && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center gap-2.5">
+              <div className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-zinc-200 truncate">{currentUser.email}</p>
+                <p className="text-[10px] text-zinc-500 truncate">
+                  {isAdmin ? 'Primary Admin Workspace' : 'Personal Workspace'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl

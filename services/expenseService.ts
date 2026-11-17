@@ -51,9 +51,73 @@ const setLocalData = <T>(key: string, data: T): void => {
 };
 
 /**
+ * Check if the user is a primary system administrator.
+ */
+export const isUserAdmin = (userEmail?: string | null): boolean => {
+  const email = (userEmail || auth?.currentUser?.email || '').toLowerCase().trim();
+  return (
+    email === 'admin@sksdm.com' ||
+    email === 'sabinksanthosh6@gmail.com' ||
+    email === 'aaryanthampi00@gmail.com' ||
+    email === 'admin@sks.com' ||
+    email.startsWith('admin@')
+  );
+};
+
+/**
+ * Recovers legacy data across candidate storage keys.
+ * Exclusively active for admin accounts to ensure 0 data loss during multi-tenant migration.
+ */
+export const recoverLegacyData = <T>(
+  prefix: string,
+  userEmail?: string | null
+): T | null => {
+  if (typeof window === 'undefined') return null;
+  if (!isUserAdmin(userEmail)) return null;
+
+  const candidateKeys = [
+    `${prefix}_default`,
+    `${prefix}_admin`,
+    prefix,
+    `${prefix}_undefined`,
+    `${prefix}_null`,
+  ];
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (
+        k &&
+        k.startsWith(prefix) &&
+        !candidateKeys.includes(k) &&
+        !k.includes('2dhsrH3CxfVogBxZemmBhMy8Dgm1') // Never pull from amil's clean partition
+      ) {
+        candidateKeys.push(k);
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading localStorage candidate keys:', e);
+  }
+
+  for (const key of candidateKeys) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed as T;
+        }
+      }
+    } catch {}
+  }
+
+  return null;
+};
+
+/**
  * Multi-tenant storage key resolver:
  * Ensures complete separation of user workspaces.
- * If user is admin (admin@sksdm.com, etc.), it migrates any legacy '_default' records to their scoped storage.
+ * If user is admin (admin@sksdm.com, etc.), it automatically restores legacy data to their scoped storage.
  * For ANY other user (e.g. amil@sksdm.com), they have an independent storage space based on their UID
  * and NEVER touch '_default' or see any other user's records.
  */
@@ -68,26 +132,20 @@ export const getUserScopedKey = (
       ? userId
       : authUser?.uid || null;
 
-  const rawEmail = userEmail || authUser?.email || '';
-  const email = rawEmail.toLowerCase().trim();
-
-  const isAdmin =
-    email === 'admin@sksdm.com' ||
-    email === 'sabinksanthosh6@gmail.com' ||
-    email === 'aaryanthampi00@gmail.com';
+  const isAdmin = isUserAdmin(userEmail || authUser?.email);
 
   // If no user is authenticated, use unauthenticated partition
   const safeId = effectiveUid ? effectiveUid : isAdmin ? 'admin' : 'unauthenticated';
   const scopedKey = `${prefix}_${safeId}`;
 
-  // Auto-migrate legacy '_default' ONLY for the admin user
+  // Auto-migrate legacy data ONLY for admin users if scopedKey is currently empty
   if (typeof window !== 'undefined' && isAdmin && safeId !== 'unauthenticated') {
     try {
       const existing = localStorage.getItem(scopedKey);
-      if (!existing) {
-        const legacy = localStorage.getItem(`${prefix}_default`);
-        if (legacy && legacy !== '[]' && legacy !== '{}') {
-          localStorage.setItem(scopedKey, legacy);
+      if (!existing || existing === '[]' || existing === '{}') {
+        const legacy = recoverLegacyData<any[]>(prefix, userEmail);
+        if (legacy && Array.isArray(legacy) && legacy.length > 0) {
+          localStorage.setItem(scopedKey, JSON.stringify(legacy));
         }
       }
     } catch (e) {
@@ -107,7 +165,30 @@ export const getExpenseAccounts = async (
   userEmail?: string | null
 ): Promise<ExpenseAccount[]> => {
   const localKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
-  const localAccounts = getLocalData<ExpenseAccount[]>(localKey, []);
+  let localAccounts = getLocalData<ExpenseAccount[]>(localKey, []);
+
+  // For admin: if current local accounts is empty or only has 3 fresh zeroed defaults,
+  // restore real legacy accounts (Canara Bank, Federal Bank, etc.) if available
+  if (isUserAdmin(userEmail)) {
+    const isOnlyFreshZeroDefaults =
+      localAccounts.length === 3 &&
+      localAccounts.every(
+        (a) => (a.openingBalance === 0 || !a.openingBalance) && a.id.startsWith('acc_default_')
+      );
+
+    if (localAccounts.length === 0 || isOnlyFreshZeroDefaults) {
+      const legacyAccounts = recoverLegacyData<ExpenseAccount[]>('sks_expense_accounts', userEmail);
+      if (legacyAccounts && legacyAccounts.length > 0) {
+        const hasRealAccounts = legacyAccounts.some(
+          (a) => (a.openingBalance && a.openingBalance > 0) || !a.id.startsWith('acc_default_')
+        );
+        if (hasRealAccounts) {
+          localAccounts = legacyAccounts;
+          setLocalData(localKey, localAccounts);
+        }
+      }
+    }
+  }
 
   try {
     if (userId && userId !== 'default' && userId !== 'unauthenticated') {
@@ -120,17 +201,10 @@ export const getExpenseAccounts = async (
         (d) => ({ ...d.data(), id: d.id } as ExpenseAccount)
       );
 
-      if (accounts.length === 0) {
-        try {
-          accounts = await seedDefaultAccounts(userId);
-        } catch (seedErr) {
-          console.warn('Could not seed accounts to Firestore, using defaults:', seedErr);
-          accounts = getInitializedDefaultAccounts(userId);
-        }
+      if (accounts.length > 0) {
+        setLocalData(localKey, accounts);
+        return accounts.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
       }
-
-      setLocalData(localKey, accounts);
-      return accounts.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
     }
   } catch (err) {
     console.warn('Firestore getExpenseAccounts failed, falling back to local:', err);
@@ -237,7 +311,15 @@ export const getExpenseCategories = async (
   userEmail?: string | null
 ): Promise<ExpenseCategory[]> => {
   const localKey = getUserScopedKey('sks_expense_categories', userId, userEmail);
-  const localCats = getLocalData<ExpenseCategory[]>(localKey, []);
+  let localCats = getLocalData<ExpenseCategory[]>(localKey, []);
+
+  if (isUserAdmin(userEmail) && localCats.length === 0) {
+    const legacy = recoverLegacyData<ExpenseCategory[]>('sks_expense_categories', userEmail);
+    if (legacy && legacy.length > 0) {
+      localCats = legacy;
+      setLocalData(localKey, localCats);
+    }
+  }
 
   try {
     if (userId && userId !== 'default' && userId !== 'unauthenticated') {
@@ -250,17 +332,10 @@ export const getExpenseCategories = async (
         (d) => ({ ...d.data(), id: d.id } as ExpenseCategory)
       );
 
-      if (categories.length === 0) {
-        try {
-          categories = await seedDefaultCategories(userId);
-        } catch (seedErr) {
-          console.warn('Could not seed categories to Firestore, using defaults:', seedErr);
-          categories = getInitializedDefaultCategories(userId);
-        }
+      if (categories.length > 0) {
+        setLocalData(localKey, categories);
+        return categories.sort((a, b) => a.name.localeCompare(b.name));
       }
-
-      setLocalData(localKey, categories);
-      return categories.sort((a, b) => a.name.localeCompare(b.name));
     }
   } catch (err) {
     console.warn('Firestore getExpenseCategories failed, falling back to local/defaults:', err);
@@ -360,7 +435,17 @@ export const getSalaryRecords = async (
   userEmail?: string | null
 ): Promise<SalaryRecord[]> => {
   const localKey = getUserScopedKey('sks_salary_records', userId, userEmail);
-  const localRecords = getLocalData<SalaryRecord[]>(localKey, []);
+  let localRecords = getLocalData<SalaryRecord[]>(localKey, []);
+
+  if (isUserAdmin(userEmail) && localRecords.length === 0) {
+    const legacy =
+      recoverLegacyData<SalaryRecord[]>('sks_salary_records', userEmail) ||
+      recoverLegacyData<SalaryRecord[]>('sks_expense_salaries', userEmail);
+    if (legacy && legacy.length > 0) {
+      localRecords = legacy;
+      setLocalData(localKey, localRecords);
+    }
+  }
 
   try {
     if (userId && userId !== 'default' && userId !== 'unauthenticated') {
@@ -369,9 +454,11 @@ export const getSalaryRecords = async (
         where('userId', '==', userId)
       );
       const snap = await getDocs(q);
-      const records = snap.docs.map((d) => ({ ...d.data(), id: d.id } as SalaryRecord));
-      setLocalData(localKey, records);
-      return records.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+      if (!snap.empty) {
+        const records = snap.docs.map((d) => ({ ...d.data(), id: d.id } as SalaryRecord));
+        setLocalData(localKey, records);
+        return records.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+      }
     }
   } catch (err) {
     console.warn('Firestore getSalaryRecords failed, using local:', err);
@@ -522,7 +609,15 @@ export const getExpenseTransactions = async (
   userEmail?: string | null
 ): Promise<ExpenseTransaction[]> => {
   const localKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
-  const localTxs = getLocalData<ExpenseTransaction[]>(localKey, []);
+  let localTxs = getLocalData<ExpenseTransaction[]>(localKey, []);
+
+  if (isUserAdmin(userEmail) && localTxs.length === 0) {
+    const legacyTxs = recoverLegacyData<ExpenseTransaction[]>('sks_expense_transactions', userEmail);
+    if (legacyTxs && legacyTxs.length > 0) {
+      localTxs = legacyTxs;
+      setLocalData(localKey, localTxs);
+    }
+  }
 
   try {
     if (userId && userId !== 'default' && userId !== 'unauthenticated') {
@@ -531,11 +626,13 @@ export const getExpenseTransactions = async (
         where('userId', '==', userId)
       );
       const snap = await getDocs(q);
-      const transactions = snap.docs.map(
-        (d) => ({ ...d.data(), id: d.id } as ExpenseTransaction)
-      );
-      setLocalData(localKey, transactions);
-      return transactions.sort((a, b) => b.date.localeCompare(a.date));
+      if (!snap.empty) {
+        const transactions = snap.docs.map(
+          (d) => ({ ...d.data(), id: d.id } as ExpenseTransaction)
+        );
+        setLocalData(localKey, transactions);
+        return transactions.sort((a, b) => b.date.localeCompare(a.date));
+      }
     }
   } catch (err) {
     console.warn('Firestore getExpenseTransactions failed, using local:', err);
@@ -618,7 +715,15 @@ export const getMonthlyBudgets = async (
   userEmail?: string | null
 ): Promise<MonthlyBudget[]> => {
   const localKey = getUserScopedKey('sks_expense_budgets', userId, userEmail);
-  const localBudgets = getLocalData<MonthlyBudget[]>(localKey, []);
+  let localBudgets = getLocalData<MonthlyBudget[]>(localKey, []);
+
+  if (isUserAdmin(userEmail) && localBudgets.length === 0) {
+    const legacy = recoverLegacyData<MonthlyBudget[]>('sks_expense_budgets', userEmail);
+    if (legacy && legacy.length > 0) {
+      localBudgets = legacy;
+      setLocalData(localKey, localBudgets);
+    }
+  }
 
   try {
     if (userId && userId !== 'default' && userId !== 'unauthenticated') {
@@ -627,9 +732,11 @@ export const getMonthlyBudgets = async (
         where('userId', '==', userId)
       );
       const snap = await getDocs(q);
-      const budgets = snap.docs.map((d) => ({ ...d.data(), id: d.id } as MonthlyBudget));
-      setLocalData(localKey, budgets);
-      return budgets.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+      if (!snap.empty) {
+        const budgets = snap.docs.map((d) => ({ ...d.data(), id: d.id } as MonthlyBudget));
+        setLocalData(localKey, budgets);
+        return budgets.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+      }
     }
   } catch (err) {
     console.warn('Firestore getMonthlyBudgets failed, using local:', err);

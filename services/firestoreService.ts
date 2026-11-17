@@ -15,7 +15,9 @@ export const getBorrowers = async (user?: { uid: string; email?: string | null }
     const isPrimaryAdmin =
         email === 'admin@sksdm.com' ||
         email === 'sabinksanthosh6@gmail.com' ||
-        email === 'aaryanthampi00@gmail.com';
+        email === 'aaryanthampi00@gmail.com' ||
+        email === 'admin@sks.com' ||
+        email.startsWith('admin@');
 
     return all.filter(b => {
         if (b.userId) {

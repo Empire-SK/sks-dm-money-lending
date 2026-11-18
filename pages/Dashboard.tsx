@@ -5,36 +5,12 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import DashboardStatsCard from '../components/DashboardStatsCard';
+import { useTheme } from '../contexts/ThemeContext';
 import { Borrower } from '../types';
 
 interface DashboardProps {
   borrowers: Borrower[];
 }
-
-const tooltipStyle = {
-  borderRadius: '12px',
-  border: '1px solid rgba(63,63,70,0.8)',
-  backgroundColor: 'rgba(24,24,27,0.95)',
-  backdropFilter: 'blur(12px)',
-  color: '#e4e4e7',
-  boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-  padding: '10px 14px',
-};
-
-const tooltipLabelStyle = {
-  color: '#a1a1aa',
-  fontSize: '11px',
-  marginBottom: '4px',
-  fontWeight: '500',
-  textTransform: 'uppercase' as const,
-};
-
-const tooltipItemStyle = {
-  color: '#f4f4f5',
-  fontSize: '13px',
-  fontWeight: '600',
-  padding: '2px 0',
-};
 
 const PIE_COLORS = ['#10b981', '#f59e0b'];
 
@@ -48,7 +24,45 @@ const AVATAR_COLORS = [
 const getAvatarColor = (name: string) => AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 
 const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   const [leaderboardCategory, setLeaderboardCategory] = useState<'pending' | 'loan' | 'repaid'>('pending');
+
+  const tooltipStyle = isLight
+    ? {
+        borderRadius: '16px',
+        border: '1px solid #E2E8F0',
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        backdropFilter: 'blur(12px)',
+        color: '#0F172A',
+        boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.08)',
+        padding: '10px 14px',
+      }
+    : {
+        borderRadius: '16px',
+        border: '1px solid rgba(63,63,70,0.8)',
+        backgroundColor: 'rgba(24,24,27,0.95)',
+        backdropFilter: 'blur(12px)',
+        color: '#e4e4e7',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+        padding: '10px 14px',
+      };
+
+  const tooltipLabelStyle = {
+    color: isLight ? '#64748B' : '#a1a1aa',
+    fontSize: '11px',
+    marginBottom: '4px',
+    fontWeight: '600',
+    textTransform: 'uppercase' as const,
+  };
+
+  const tooltipItemStyle = {
+    color: isLight ? '#0F172A' : '#f4f4f5',
+    fontSize: '13px',
+    fontWeight: '700',
+    padding: '2px 0',
+  };
   const stats = useMemo(() => {
     return borrowers.reduce(
       (acc, curr) => {
@@ -106,12 +120,12 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100">Dashboard</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Overview of your lending portfolio</p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">Overview of your lending portfolio</p>
         </div>
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Live data
+        <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 text-xs font-semibold text-slate-600 dark:text-zinc-400 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-[#65A30D] dark:bg-[#A3E635] animate-pulse" />
+          Live Lending Data
         </div>
       </div>
 
@@ -146,22 +160,22 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
 
       {/* Recovery Rate Banner */}
       {borrowers.length > 0 && (
-        <div className="glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-zinc-300">Portfolio Recovery Rate</span>
-              <span className="text-sm font-bold text-emerald-400">{recoveryRate}%</span>
+              <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-zinc-300">Portfolio Recovery Rate</span>
+              <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">{recoveryRate}%</span>
             </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-700"
+                className="h-full bg-gradient-to-r from-[#65A30D] to-[#A3E635] dark:from-emerald-500 dark:to-emerald-400 rounded-full transition-all duration-700"
                 style={{ width: `${recoveryRate}%` }}
               />
             </div>
           </div>
-          <div className="sm:border-l sm:border-zinc-800 sm:pl-4 flex sm:flex-col gap-3 sm:gap-1 text-xs text-zinc-500">
-            <span>₹{stats.totalRepaid.toLocaleString('en-IN')} <span className="text-zinc-600">collected</span></span>
-            <span>₹{stats.totalOutstanding.toLocaleString('en-IN')} <span className="text-zinc-600">pending</span></span>
+          <div className="sm:border-l sm:border-gray-200 dark:sm:border-zinc-800 sm:pl-4 flex sm:flex-col gap-3 sm:gap-1 text-xs text-slate-500 dark:text-zinc-400 font-medium">
+            <span>₹{stats.totalRepaid.toLocaleString('en-IN')} <span className="text-slate-400 dark:text-zinc-500">collected</span></span>
+            <span>₹{stats.totalOutstanding.toLocaleString('en-IN')} <span className="text-slate-400 dark:text-zinc-500">pending</span></span>
           </div>
         </div>
       )}
@@ -171,24 +185,24 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
         {/* Bar Chart */}
         <div className="glass-card p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-zinc-200">Monthly Collections</h3>
-            <p className="text-xs text-zinc-600 mt-0.5">Transaction volume by month</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Monthly Collections</h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Transaction volume by month</p>
           </div>
           <div className="h-56">
             {collectionData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={collectionData} barSize={28}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(63,63,70,0.5)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isLight ? '#E5E7EB' : 'rgba(63,63,70,0.5)'} />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#71717a', fontSize: 11 }}
+                    tick={{ fill: isLight ? '#64748B' : '#71717a', fontSize: 11 }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#71717a', fontSize: 11 }}
+                    tick={{ fill: isLight ? '#64748B' : '#71717a', fontSize: 11 }}
                     tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
@@ -196,14 +210,14 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
                     contentStyle={tooltipStyle}
                     labelStyle={tooltipLabelStyle}
                     itemStyle={tooltipItemStyle}
-                    cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                    cursor={{ fill: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)' }}
                   />
                   <Bar dataKey="amount" fill="#10b981" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-zinc-600">No collection data yet</p>
+                <p className="text-sm text-slate-500 dark:text-zinc-500">No collection data yet</p>
               </div>
             )}
           </div>
@@ -212,8 +226,8 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
         {/* Pie Chart */}
         <div className="glass-card p-5">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-zinc-200">Portfolio Distribution</h3>
-            <p className="text-xs text-zinc-600 mt-0.5">Repaid vs outstanding breakdown</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Portfolio Distribution</h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Repaid vs outstanding breakdown</p>
           </div>
           <div className="h-56">
             {(stats.totalRepaid + stats.totalOutstanding) > 0 ? (
@@ -243,14 +257,14 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
                     verticalAlign="bottom"
                     height={32}
                     formatter={(value) => (
-                      <span style={{ color: '#a1a1aa', fontSize: '12px' }}>{value}</span>
+                      <span style={{ color: isLight ? '#475569' : '#a1a1aa', fontSize: '12px', fontWeight: '600' }}>{value}</span>
                     )}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-zinc-600">No portfolio data yet</p>
+                <p className="text-sm text-slate-500 dark:text-zinc-500">No portfolio data yet</p>
               </div>
             )}
           </div>
@@ -261,21 +275,21 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
       <div className="glass-card p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-              <Trophy size={16} className="text-amber-400" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+              <Trophy size={16} className="text-amber-500" />
               Active Borrowers Leaderboard
             </h3>
-            <p className="text-xs text-zinc-600 mt-0.5">Top 5 by category</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Top 5 by category</p>
           </div>
-          <div className="flex gap-2 bg-zinc-900/60 p-1 rounded-xl border border-zinc-800/60">
+          <div className="flex gap-1.5 bg-gray-100 dark:bg-zinc-900/60 p-1 rounded-2xl border border-gray-200/80 dark:border-zinc-800/60">
             {(['pending', 'loan', 'repaid'] as const).map(cat => (
               <button
                 key={cat}
                 onClick={() => setLeaderboardCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   leaderboardCategory === cat 
-                    ? 'bg-zinc-800 text-zinc-200 border border-zinc-700 shadow-sm' 
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                    ? 'bg-[#A3E635] text-[#0D2A18] shadow-sm' 
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}
               >
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -284,37 +298,37 @@ const Dashboard: React.FC<DashboardProps> = ({ borrowers }) => {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {topBorrowers.length > 0 ? topBorrowers.map((b, idx) => {
             const value = leaderboardCategory === 'pending' 
               ? b.totalPayable - b.repaidAmount
               : leaderboardCategory === 'loan' ? b.loanAmount : b.repaidAmount;
             
             return (
-              <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/40 hover:bg-zinc-900/60 transition-colors">
+              <div key={b.id} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50/80 dark:bg-zinc-900/40 border border-gray-100 dark:border-zinc-800/40 hover:bg-gray-100/80 dark:hover:bg-zinc-900/60 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className={`w-6 text-center text-xs font-bold ${idx === 0 ? 'text-amber-400 text-sm' : idx === 1 ? 'text-zinc-300' : idx === 2 ? 'text-amber-600' : 'text-zinc-600'}`}>
+                  <div className={`w-6 text-center text-xs font-black ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-500 dark:text-zinc-300' : idx === 2 ? 'text-amber-700 dark:text-amber-600' : 'text-slate-400 dark:text-zinc-500'}`}>
                     #{idx + 1}
                   </div>
                   <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs flex-shrink-0 ${getAvatarColor(b.name)}`}>
                     {b.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-zinc-200">{b.name}</p>
-                    <p className="text-xs text-zinc-600">{b.phone}</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-zinc-200">{b.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">{b.phone}</p>
                   </div>
                 </div>
-                <div className={`text-sm font-bold ${
-                  leaderboardCategory === 'pending' ? 'text-amber-400' 
-                  : leaderboardCategory === 'loan' ? 'text-zinc-200' 
-                  : 'text-emerald-400'
+                <div className={`text-sm font-black tabular-nums ${
+                  leaderboardCategory === 'pending' ? 'text-amber-600 dark:text-amber-400' 
+                  : leaderboardCategory === 'loan' ? 'text-slate-800 dark:text-zinc-200' 
+                  : 'text-emerald-600 dark:text-emerald-400'
                 }`}>
                   ₹{value.toLocaleString('en-IN')}
                 </div>
               </div>
             );
           }) : (
-            <div className="py-6 text-center text-sm text-zinc-600">No active borrowers found.</div>
+            <div className="py-6 text-center text-sm text-slate-500 dark:text-zinc-500">No active borrowers found.</div>
           )}
         </div>
       </div>

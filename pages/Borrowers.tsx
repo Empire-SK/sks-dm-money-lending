@@ -237,8 +237,8 @@ const Borrowers: React.FC<BorrowersProps> = ({
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100">Borrowers</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">Borrowers</h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-500 mt-0.5 font-medium">
             {borrowers.length} total &middot; {borrowers.filter(b => b.status === 'Active').length} active
           </p>
         </div>
@@ -256,7 +256,7 @@ const Borrowers: React.FC<BorrowersProps> = ({
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <Search size={15} className="text-zinc-600" />
+            <Search size={15} className="text-slate-400 dark:text-zinc-600" />
           </div>
           <input
             type="text"
@@ -266,19 +266,19 @@ const Borrowers: React.FC<BorrowersProps> = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {searchTerm && (
-            <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-600 hover:text-zinc-400">
+            <button onClick={() => setSearchTerm('')} className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:text-zinc-600 dark:hover:text-zinc-400">
               <X size={15} />
             </button>
           )}
         </div>
         <div className="relative sm:w-56 flex-shrink-0">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-            <Filter size={15} className="text-zinc-600" />
+            <Filter size={15} className="text-slate-400 dark:text-zinc-600" />
           </div>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="input-base pl-10 w-full cursor-pointer bg-zinc-900/60 text-sm"
+            className="input-base pl-10 w-full cursor-pointer bg-white dark:bg-zinc-900/60 text-sm font-semibold"
           >
             <option value="recent_activity">Recent Activity First</option>
             <option value="highest_pending">Highest Pending First</option>
@@ -293,27 +293,27 @@ const Borrowers: React.FC<BorrowersProps> = ({
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr className="border-b border-zinc-800/80 bg-zinc-900/40">
+              <tr className="border-b border-gray-200/80 dark:border-zinc-800/80 bg-gray-50/80 dark:bg-zinc-900/40">
                 {['Borrower', 'Loan Amount', 'Pending Amount', 'Repayment Progress', 'Status', 'Actions'].map((h) => (
-                  <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-5 py-3.5 text-left text-[11px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/60">
               {sortedBorrowers.map((borrower) => {
                 const pct = Math.min(100, borrower.totalPayable > 0 ? (borrower.repaidAmount / borrower.totalPayable) * 100 : 0);
                 const remaining = borrower.totalPayable - borrower.repaidAmount;
 
                 return (
-                  <tr key={borrower.id} className="hover:bg-zinc-900/40 transition-colors">
+                  <tr key={borrower.id} className="hover:bg-gray-50/80 dark:hover:bg-zinc-900/40 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <Avatar name={borrower.name} />
                         <div>
-                          <p className="text-sm font-semibold text-zinc-100">{borrower.name}</p>
-                          <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5"><Phone size={11} /> {borrower.phone}</div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-zinc-100">{borrower.name}</p>
+                          <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-zinc-500 mt-0.5"><Phone size={11} /> {borrower.phone}</div>
                           {borrower.note && (
-                            <div className="flex items-center gap-1 text-xs text-zinc-600 italic mt-1 max-w-[200px]">
+                            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-zinc-500 italic mt-1 max-w-[200px]">
                               <FileText size={10} className="flex-shrink-0" /><span className="truncate">{borrower.note}</span>
                             </div>
                           )}
@@ -321,27 +321,27 @@ const Borrowers: React.FC<BorrowersProps> = ({
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <p className="text-sm font-semibold text-zinc-100">₹{borrower.loanAmount.toLocaleString('en-IN')}</p>
-                      <p className="text-xs text-zinc-600 mt-0.5">
+                      <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">₹{borrower.loanAmount.toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-slate-400 dark:text-zinc-600 mt-0.5">
                         Since {new Date(borrower.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <p className="text-sm font-bold text-amber-400">₹{remaining.toLocaleString('en-IN')}</p>
+                      <p className="text-sm font-bold text-amber-600 dark:text-amber-400">₹{remaining.toLocaleString('en-IN')}</p>
                     </td>
                     <td className="px-5 py-4">
                       <div className="w-40">
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-emerald-400">₹{borrower.repaidAmount.toLocaleString('en-IN')}</span>
-                          <span className="text-zinc-500">₹{remaining.toLocaleString('en-IN')} left</span>
+                        <div className="flex justify-between text-xs mb-1.5 font-semibold">
+                          <span className="text-emerald-600 dark:text-emerald-400">₹{borrower.repaidAmount.toLocaleString('en-IN')}</span>
+                          <span className="text-slate-400 dark:text-zinc-500">₹{remaining.toLocaleString('en-IN')} left</span>
                         </div>
-                        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-500 ${borrower.status === 'Completed' ? 'bg-emerald-500' : 'bg-gradient-to-r from-emerald-600 to-emerald-400'}`}
+                            className={`h-full rounded-full transition-all duration-500 ${borrower.status === 'Completed' ? 'bg-[#A3E635]' : 'bg-gradient-to-r from-[#65A30D] to-[#A3E635]'}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <p className="text-[10px] text-zinc-600 mt-1">{Math.round(pct)}% repaid</p>
+                        <p className="text-[10px] text-slate-400 dark:text-zinc-600 mt-1">{Math.round(pct)}% repaid</p>
                       </div>
                     </td>
                     <td className="px-5 py-4">

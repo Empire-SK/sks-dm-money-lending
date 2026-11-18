@@ -11,23 +11,23 @@ interface DashboardStatsCardProps {
 
 const accentMap = {
   emerald: {
-    icon: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    value: 'text-emerald-400',
+    icon: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    value: 'text-emerald-600 dark:text-emerald-400',
     glow: 'before:bg-emerald-500/5',
   },
   amber: {
-    icon: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    value: 'text-amber-400',
+    icon: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    value: 'text-amber-600 dark:text-amber-400',
     glow: 'before:bg-amber-500/5',
   },
   violet: {
-    icon: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-    value: 'text-violet-400',
+    icon: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+    value: 'text-violet-600 dark:text-violet-400',
     glow: 'before:bg-violet-500/5',
   },
   sky: {
-    icon: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-    value: 'text-sky-400',
+    icon: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+    value: 'text-sky-600 dark:text-sky-400',
     glow: 'before:bg-sky-500/5',
   },
 };
@@ -36,7 +36,7 @@ const DashboardStatsCard: React.FC<DashboardStatsCardProps> = ({ title, value, i
   const colors = accentMap[accent];
 
   return (
-    <div className="relative glass-card p-5 overflow-hidden group hover:border-zinc-700/80 transition-all duration-300">
+    <div className="relative glass-card p-5 overflow-hidden group hover:border-gray-300 dark:hover:border-zinc-700/80 transition-all duration-300">
       {/* Subtle top accent line */}
       <div className={`absolute top-0 left-0 right-0 h-px ${
         accent === 'emerald' ? 'bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent' :
@@ -47,13 +47,13 @@ const DashboardStatsCard: React.FC<DashboardStatsCardProps> = ({ title, value, i
 
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider truncate">{title}</p>
-          <p className={`text-2xl font-bold mt-2 ${colors.value} tabular-nums`}>{value}</p>
+          <p className="text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-wider truncate">{title}</p>
+          <p className={`text-2xl font-black mt-2 ${colors.value} tabular-nums tracking-tight`}>{value}</p>
           {trend && (
-            <p className="text-xs text-zinc-600 mt-1.5 truncate">{trend}</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 truncate font-medium">{trend}</p>
           )}
         </div>
-        <div className={`p-2.5 rounded-xl border flex-shrink-0 ml-3 ${colors.icon}`}>
+        <div className={`p-2.5 rounded-2xl border flex-shrink-0 ml-3 ${colors.icon}`}>
           <Icon size={20} />
         </div>
       </div>

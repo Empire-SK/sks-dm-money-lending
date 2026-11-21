@@ -229,7 +229,7 @@ export const ExpenseOverview: React.FC = () => {
 
       {/* ── Filter / Time Switcher Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-1.5 p-1 bg-white/80 dark:bg-zinc-900 rounded-2xl border border-gray-200/80 dark:border-zinc-800 text-xs overflow-x-auto scrollbar-none shadow-sm">
+        <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 text-xs overflow-x-auto scrollbar-none shadow-sm">
           {[
             { id: 'current_month', label: 'Current Month' },
             { id: 'prev_month', label: 'Prev Month' },
@@ -242,8 +242,8 @@ export const ExpenseOverview: React.FC = () => {
               onClick={() => handlePeriodChange(tab.id as any)}
               className={`px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap text-xs ${
                 filterPeriod === tab.id
-                  ? 'bg-[#A3E635] text-[#0D2A18] shadow-sm'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-700 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               }`}
             >
               {tab.label}
@@ -251,8 +251,8 @@ export const ExpenseOverview: React.FC = () => {
           ))}
         </div>
 
-        <p className="text-xs text-slate-500 dark:text-zinc-500 font-medium">
-          Period: <span className="text-slate-800 dark:text-zinc-200 font-bold">{formatMonthYear(selectedMonthYear)}</span>
+        <p className="text-xs text-slate-600 dark:text-zinc-400 font-semibold">
+          Period: <span className="text-slate-900 dark:text-zinc-100 font-black">{formatMonthYear(selectedMonthYear)}</span>
         </p>
       </div>
 
@@ -264,26 +264,26 @@ export const ExpenseOverview: React.FC = () => {
           <div>
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-[#A3E635]/20 text-[#0D2A18] dark:text-[#A3E635] border border-[#A3E635]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#65A30D] dark:bg-[#A3E635]" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
                   INR ₹
                 </span>
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
                   Cash + UPI
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-zinc-400">
                   Active Account
                 </p>
-                <p className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1">
-                  sks-dm-lending <ShieldCheck size={12} className="text-[#65A30D] dark:text-[#A3E635]" />
+                <p className="text-xs font-black text-slate-800 dark:text-zinc-200 flex items-center gap-1 justify-end">
+                  sks-dm-lending <ShieldCheck size={13} className="text-emerald-600 dark:text-emerald-400" />
                 </p>
               </div>
             </div>
 
             {/* Active Balance Header & Big Amount */}
-            <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
+            <p className="text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
               Active Spendable Balance
             </p>
             <div className="flex items-center gap-3 mt-1.5">
@@ -292,43 +292,43 @@ export const ExpenseOverview: React.FC = () => {
               </h2>
               <button
                 onClick={() => setShowBalance(!showBalance)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800/80 transition-all"
+                className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800/80 transition-all"
                 title={showBalance ? 'Hide balance' : 'Show balance'}
               >
                 {showBalance ? <Eye size={18} /> : <EyeOff size={18} />}
               </button>
             </div>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 font-medium">
+            <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1 font-medium">
               Total liquid funds ready for transactions & daily outflow
             </p>
           </div>
 
-          {/* Bottom Action Row */}
-          <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-zinc-800/80">
-            <div className="flex items-center gap-2">
+          {/* Bottom Action Row - Responsive on Mobile */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 mt-6 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial">
               <button
                 onClick={() => openTx('transfer')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0D2A18] hover:bg-[#163821] text-[#A3E635] text-xs font-bold shadow-md transition-all active:scale-95"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95"
               >
                 <ArrowRightLeft size={14} />
-                <span>Transfer Balance</span>
+                <span>Transfer</span>
               </button>
               <button
                 onClick={() => openTx('expense')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 border border-gray-200 dark:border-zinc-700 text-xs font-bold transition-all active:scale-95 shadow-sm"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700 text-xs font-bold transition-all active:scale-95 shadow-sm"
               >
                 <Plus size={14} />
-                <span>Record Outflow</span>
+                <span>Outflow</span>
               </button>
             </div>
 
-            {/* Floating Circular Lime Action Button with ↗ */}
+            {/* Circular Action Button with ↗ */}
             <button
               onClick={() => openTx('income')}
-              className="w-11 h-11 rounded-full bg-[#A3E635] hover:bg-[#bef264] text-[#0D2A18] flex items-center justify-center shadow-lg hover:shadow-xl transition-all active:scale-90 flex-shrink-0"
+              className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-md hover:shadow-lg transition-all active:scale-90 flex-shrink-0"
               title="Add Inflow / Income"
             >
-              <ArrowUpRight size={22} strokeWidth={2.5} />
+              <ArrowUpRight size={20} strokeWidth={2.5} />
             </button>
           </div>
         </div>
@@ -336,7 +336,7 @@ export const ExpenseOverview: React.FC = () => {
         {/* Right Bento Card: Priority Savings Vault (5 cols) */}
         <div className="lg:col-span-5 bento-highlight-card p-5 sm:p-7 flex flex-col justify-between relative overflow-hidden group">
           {/* Subtle 4-pointed Star Watermark SVG */}
-          <div className="absolute -right-12 -bottom-12 w-64 h-64 opacity-15 pointer-events-none text-[#0D2A18]">
+          <div className="absolute -right-12 -bottom-12 w-64 h-64 opacity-10 pointer-events-none text-white">
             <svg viewBox="0 0 200 200" fill="currentColor">
               <path d="M100 0 C100 55 145 100 200 100 C145 100 100 145 100 200 C100 145 55 100 0 100 C55 100 100 55 100 0 Z" />
             </svg>
@@ -345,27 +345,27 @@ export const ExpenseOverview: React.FC = () => {
           {/* Top Row: Priority Pill */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#0D2A18] text-[#A3E635] shadow-sm">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-white/20 text-white border border-white/30 backdrop-blur-sm shadow-sm">
                 PRIORITY
                 <Sparkles size={12} />
               </span>
-              <span className="text-[11px] font-bold text-[#0D2A18]/80 uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-emerald-100 uppercase tracking-wider">
                 Vault Status
               </span>
             </div>
 
-            <p className="text-xs font-bold text-[#0D2A18]/80 uppercase tracking-wider">
+            <p className="text-xs font-bold text-emerald-100 uppercase tracking-wider">
               Dedicated Savings & Vault
             </p>
             <div className="flex items-baseline gap-2 mt-1">
-              <h2 className="text-3xl sm:text-4xl font-black text-[#0D2A18] tabular-nums tracking-tight">
+              <h2 className="text-3xl sm:text-4xl font-black text-white tabular-nums tracking-tight">
                 {formatINR(monthlySummary.dedicatedSavings > 0 ? monthlySummary.dedicatedSavings : monthlySummary.monthlySavings)}
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-white/70 text-[#0D2A18] border border-white/80">
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-white/25 text-white border border-white/30">
                 {monthlySummary.savingsRate}% rate
               </span>
             </div>
-            <p className="text-xs text-[#0D2A18]/80 mt-1 font-semibold">
+            <p className="text-xs text-emerald-100/90 mt-1 font-medium">
               Protected balance insulated from daily spontaneous outflow
             </p>
           </div>
@@ -373,27 +373,27 @@ export const ExpenseOverview: React.FC = () => {
           {/* Two Inner Rounded Capsules at Bottom */}
           <div className="grid grid-cols-2 gap-2.5 mt-5">
             {/* Capsule 1: Dedicated Vault */}
-            <div className="bg-white/40 backdrop-blur-md p-3 rounded-2xl border border-white/60 text-[#0D2A18]">
+            <div className="bg-white/15 backdrop-blur-md p-3 rounded-2xl border border-white/25 text-white shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Vault Bank</span>
-                <PiggyBank size={13} className="text-[#0D2A18]" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">Vault Bank</span>
+                <PiggyBank size={14} className="text-white" />
               </div>
-              <p className="text-sm sm:text-base font-black mt-1 tabular-nums">
+              <p className="text-sm sm:text-base font-black mt-1 tabular-nums text-white">
                 {formatINR(dedicatedSavingsBalance)}
               </p>
-              <p className="text-[10px] font-semibold text-[#0D2A18]/70">Federal Bank</p>
+              <p className="text-[10px] font-semibold text-emerald-200">Federal Bank</p>
             </div>
 
             {/* Capsule 2: Unspent Liquid Cash */}
-            <div className="bg-white/40 backdrop-blur-md p-3 rounded-2xl border border-white/60 text-[#0D2A18]">
+            <div className="bg-white/15 backdrop-blur-md p-3 rounded-2xl border border-white/25 text-white shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Unspent Cash</span>
-                <Wallet size={13} className="text-[#0D2A18]" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100">Unspent Cash</span>
+                <Wallet size={14} className="text-white" />
               </div>
-              <p className="text-sm sm:text-base font-black mt-1 tabular-nums">
+              <p className="text-sm sm:text-base font-black mt-1 tabular-nums text-white">
                 {formatINR(monthlySummary.spendableBalance)}
               </p>
-              <p className="text-[10px] font-semibold text-[#0D2A18]/70">Carried Liquid</p>
+              <p className="text-[10px] font-semibold text-emerald-200">Carried Liquid</p>
             </div>
           </div>
         </div>
@@ -495,15 +495,15 @@ export const ExpenseOverview: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#A3E635]/20 text-[#0D2A18] dark:text-[#A3E635] flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 flex items-center justify-center font-bold">
                   <Coins size={16} />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Earnings</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">Inflow & Salary sources</p>
+                  <p className="text-[11px] text-slate-600 dark:text-zinc-400 font-medium">Inflow & Salary sources</p>
                 </div>
               </div>
-              <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-[#A3E635] text-[#0D2A18]">
+              <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400">
                 {monthlySummary.savingsRate}% saved
               </span>
             </div>
@@ -512,7 +512,7 @@ export const ExpenseOverview: React.FC = () => {
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
                 {formatINR(monthlySummary.totalIncome)}
               </h2>
-              <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-1">
                 + Inflow recorded for {formatMonthYear(selectedMonthYear)}
               </p>
             </div>
@@ -527,9 +527,9 @@ export const ExpenseOverview: React.FC = () => {
                     {formatINR(monthlySummary.salaryIncome)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-zinc-800 h-3 rounded-full overflow-hidden flex items-center">
+                <div className="w-full bg-slate-200 dark:bg-zinc-800 h-3 rounded-full overflow-hidden flex items-center">
                   <div
-                    className="bg-[#65A30D] dark:bg-[#A3E635] h-full rounded-full transition-all duration-500"
+                    className="bg-emerald-600 dark:bg-emerald-400 h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(100, Math.round((monthlySummary.salaryIncome / (monthlySummary.totalIncome || 1)) * 100))}%`,
                     }}
@@ -545,9 +545,9 @@ export const ExpenseOverview: React.FC = () => {
                     {formatINR(monthlySummary.bonusIncome + monthlySummary.incentiveIncome)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-zinc-800 h-3 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-zinc-800 h-3 rounded-full overflow-hidden">
                   <div
-                    className="bg-emerald-400 h-full rounded-full transition-all duration-500"
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(100, Math.round(((monthlySummary.bonusIncome + monthlySummary.incentiveIncome) / (monthlySummary.totalIncome || 1)) * 100))}%`,
                     }}
@@ -563,7 +563,7 @@ export const ExpenseOverview: React.FC = () => {
                     {formatINR(monthlySummary.dedicatedSavings)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-zinc-800 h-3 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-zinc-800 h-3 rounded-full overflow-hidden">
                   <div
                     className="bg-purple-500 h-full rounded-full transition-all duration-500"
                     style={{
@@ -575,10 +575,10 @@ export const ExpenseOverview: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-gray-100 dark:border-zinc-800 mt-4">
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 mt-4">
             <Link
               to="/expense/salary"
-              className="text-xs font-bold text-[#65A30D] dark:text-[#A3E635] hover:underline flex items-center justify-between"
+              className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center justify-between"
             >
               <span>Manage Salary Records</span>
               <ArrowRight size={13} />
@@ -591,17 +591,17 @@ export const ExpenseOverview: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 flex items-center justify-center font-bold">
                   <FileText size={16} />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Transactions</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">Recent recorded events</p>
+                  <p className="text-[11px] text-slate-600 dark:text-zinc-400 font-medium">Recent recorded events</p>
                 </div>
               </div>
               <Link
                 to="/expense/transactions"
-                className="text-xs font-bold text-[#65A30D] dark:text-[#A3E635] hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
               >
                 View all ({transactions.length})
               </Link>
@@ -620,7 +620,7 @@ export const ExpenseOverview: React.FC = () => {
                   return (
                     <div
                       key={tx.id}
-                      className="p-2.5 rounded-2xl bg-gray-50/80 dark:bg-zinc-900/60 border border-gray-100 dark:border-zinc-800/80 flex items-center justify-between gap-3 hover:border-gray-300 dark:hover:border-zinc-700 transition-all"
+                      className="p-2.5 rounded-2xl bg-slate-50/90 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-zinc-700 transition-all"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
@@ -636,7 +636,7 @@ export const ExpenseOverview: React.FC = () => {
                           <p className="text-xs font-bold text-slate-900 dark:text-zinc-200 truncate">
                             {tx.title}
                           </p>
-                          <p className="text-[10px] text-slate-500 dark:text-zinc-500 truncate">
+                          <p className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium truncate">
                             {tx.date} • {cat?.name || (isIncome ? 'Income' : 'General')}
                           </p>
                         </div>
@@ -646,7 +646,7 @@ export const ExpenseOverview: React.FC = () => {
                         <p
                           className={`text-xs font-bold tabular-nums ${
                             isIncome
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-emerald-700 dark:text-emerald-400'
                               : isExpense
                               ? 'text-rose-600 dark:text-rose-400'
                               : isRefund
@@ -665,7 +665,7 @@ export const ExpenseOverview: React.FC = () => {
                               setActiveReceiptUrl(tx.receiptUrl || '');
                               setActiveReceiptName(tx.receiptName || 'Receipt');
                             }}
-                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5 justify-end ml-auto mt-0.5"
+                            className="text-[10px] text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-0.5 justify-end ml-auto mt-0.5 font-bold"
                           >
                             <FileText size={10} /> Receipt
                           </button>
@@ -682,10 +682,10 @@ export const ExpenseOverview: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-3 border-t border-gray-100 dark:border-zinc-800 mt-4">
+          <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 mt-4">
             <button
               onClick={() => openTx('expense')}
-              className="w-full py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-bold transition-all"
+              className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 text-xs font-bold transition-all shadow-sm"
             >
               + Quick Add Outflow
             </button>
@@ -751,7 +751,7 @@ export const ExpenseOverview: React.FC = () => {
               </div>
               <Link
                 to="/expense/accounts"
-                className="text-xs font-bold text-[#65A30D] dark:text-[#A3E635] hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
               >
                 Manage <ArrowRight size={13} />
               </Link>
@@ -763,7 +763,7 @@ export const ExpenseOverview: React.FC = () => {
                 return (
                   <div
                     key={summary.account.id}
-                    className="p-3 rounded-2xl bg-gray-50/80 dark:bg-zinc-900/60 border border-gray-100 dark:border-zinc-800 flex items-center justify-between"
+                    className="p-3 rounded-2xl bg-slate-50/90 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5 min-w-0 pr-2">
                       <div
@@ -792,22 +792,22 @@ export const ExpenseOverview: React.FC = () => {
                               Vault
                             </span>
                           ) : (
-                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#A3E635]/20 text-[#0D2A18] dark:text-[#A3E635] border border-[#A3E635]/30">
+                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
                               Spend
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-500 dark:text-zinc-500 capitalize">
+                        <p className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium capitalize">
                           {summary.account.type}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right flex-shrink-0">
-                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
+                      <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-zinc-100 tabular-nums">
                         {formatINR(summary.currentBalance)}
                       </p>
-                      <p className="text-[10px] text-slate-400 dark:text-zinc-500">
+                      <p className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium">
                         Open: {formatINR(summary.account.openingBalance)}
                       </p>
                     </div>

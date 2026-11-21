@@ -273,21 +273,21 @@ export const Transactions: React.FC = () => {
         </div>
 
         {/* Second Row: Date range & Sort */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-zinc-800/60 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-slate-200/80 dark:border-zinc-800/60 text-xs">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <span className="text-zinc-500 text-[11px]">From:</span>
+            <span className="text-slate-600 dark:text-zinc-400 font-bold text-[11px]">From:</span>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="input-base py-1 px-2 text-xs w-32 sm:w-36"
+              className="input-base py-1 px-2 text-xs w-32 sm:w-36 font-semibold"
             />
-            <span className="text-zinc-500 text-[11px]">To:</span>
+            <span className="text-slate-600 dark:text-zinc-400 font-bold text-[11px]">To:</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="input-base py-1 px-2 text-xs w-32 sm:w-36"
+              className="input-base py-1 px-2 text-xs w-32 sm:w-36 font-semibold"
             />
             {(startDate || endDate || searchTerm || typeFilter !== 'all' || categoryFilter !== 'all' || accountFilter !== 'all') && (
               <button
@@ -299,7 +299,7 @@ export const Transactions: React.FC = () => {
                   setStartDate('');
                   setEndDate('');
                 }}
-                className="text-zinc-400 hover:text-zinc-200 text-xs underline ml-1"
+                className="text-emerald-700 dark:text-emerald-400 hover:underline text-xs font-bold ml-1"
               >
                 Reset
               </button>
@@ -308,11 +308,11 @@ export const Transactions: React.FC = () => {
 
           {/* Sort Order */}
           <div className="flex items-center gap-1.5 justify-between sm:justify-end">
-            <span className="text-zinc-500 text-[11px]">Sort:</span>
+            <span className="text-slate-600 dark:text-zinc-400 font-bold text-[11px]">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="input-base py-1 px-2 text-xs w-36 sm:w-40"
+              className="input-base py-1 px-2 text-xs w-36 sm:w-40 font-semibold"
             >
               <option value="date_desc">Latest Date</option>
               <option value="date_asc">Oldest Date</option>
@@ -352,7 +352,7 @@ export const Transactions: React.FC = () => {
                 : 'Transfer';
 
             return (
-              <div key={tx.id} className="p-3.5 space-y-2 hover:bg-zinc-800/30 transition-colors">
+              <div key={tx.id} className="p-3.5 space-y-2 hover:bg-slate-50/80 dark:hover:bg-zinc-800/30 transition-colors">
                 {/* Top Row: Category & Amount */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -368,11 +368,11 @@ export const Transactions: React.FC = () => {
                         size={14}
                       />
                     </div>
-                    <span className="text-[11px] font-semibold text-zinc-300 truncate">
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">
                       {tx.categoryId === 'salary' ? 'Salary' : isTransfer ? transferLabel : isIncome ? 'Income' : cat?.name || 'General'}
                     </span>
                     {tx.subcategory && !isIncome && !isTransfer && (
-                      <span className="text-[10px] text-zinc-500 truncate">
+                      <span className="text-[10px] text-slate-600 dark:text-zinc-400 font-semibold truncate">
                         • {tx.subcategory}
                       </span>
                     )}
@@ -380,14 +380,14 @@ export const Transactions: React.FC = () => {
 
                   <div className="text-right flex-shrink-0">
                     <span
-                      className={`text-sm font-extrabold tabular-nums ${
+                      className={`text-sm font-black tabular-nums ${
                         isIncome
-                          ? 'text-emerald-400'
+                          ? 'text-emerald-700 dark:text-emerald-400'
                           : isExpense
-                          ? 'text-rose-400'
+                          ? 'text-rose-600 dark:text-rose-400'
                           : isRefund
-                          ? 'text-purple-400'
-                          : 'text-blue-400'
+                          ? 'text-purple-600 dark:text-purple-400'
+                          : 'text-sky-600 dark:text-sky-400'
                       }`}
                     >
                       {isIncome && '+'}
@@ -400,20 +400,20 @@ export const Transactions: React.FC = () => {
 
                 {/* Middle Row: Title & Notes */}
                 <div>
-                  <p className="text-xs font-bold text-zinc-100">{tx.title}</p>
+                  <p className="text-xs font-bold text-slate-900 dark:text-zinc-100">{tx.title}</p>
                   {tx.description && (
-                    <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">
+                    <p className="text-[11px] text-slate-600 dark:text-zinc-400 mt-0.5 line-clamp-2 font-medium">
                       {tx.description}
                     </p>
                   )}
                 </div>
 
                 {/* Bottom Row: Metadata & Quick Actions */}
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-zinc-850 text-[11px] text-zinc-400">
+                <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-600 dark:text-zinc-400">
                   <div className="flex items-center gap-1.5 truncate">
-                    <span>{tx.date}</span>
+                    <span className="font-medium">{tx.date}</span>
                     <span>•</span>
-                    <span className="text-zinc-300 font-medium truncate">
+                    <span className="text-slate-800 dark:text-zinc-200 font-bold truncate">
                       {isTransfer ? `${acc?.name || 'Src'} → ${toAcc?.name || 'Dest'}` : acc?.name || 'Account'}
                     </span>
                     {tx.receiptUrl && (
@@ -422,7 +422,7 @@ export const Transactions: React.FC = () => {
                           setViewingReceiptUrl(tx.receiptUrl || '');
                           setViewingReceiptName(tx.receiptName || 'Receipt');
                         }}
-                        className="text-emerald-400 hover:underline inline-flex items-center gap-0.5 ml-1"
+                        className="text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-0.5 ml-1 font-bold"
                       >
                         <FileText size={11} /> Receipt
                       </button>
@@ -468,7 +468,7 @@ export const Transactions: React.FC = () => {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 text-slate-700 dark:text-zinc-400 font-bold uppercase tracking-wider">
                 <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4">Title</th>
                 <th className="py-3 px-4">Category</th>
@@ -479,7 +479,7 @@ export const Transactions: React.FC = () => {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {paginatedTransactions.map((tx) => {
                 const cat = categories.find((c) => c.id === tx.categoryId);
                 const acc = accounts.find((a) => a.id === tx.accountId);
@@ -508,18 +508,18 @@ export const Transactions: React.FC = () => {
                 return (
                   <tr
                     key={tx.id}
-                    className="hover:bg-zinc-800/40 transition-colors group"
+                    className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors group"
                   >
                     {/* Date */}
-                    <td className="py-3 px-4 text-zinc-400 whitespace-nowrap font-medium">
+                    <td className="py-3 px-4 text-slate-600 dark:text-zinc-400 whitespace-nowrap font-medium">
                       {tx.date}
                     </td>
 
                     {/* Title & Notes */}
                     <td className="py-3 px-4">
-                      <div className="font-bold text-zinc-200">{tx.title}</div>
+                      <div className="font-bold text-slate-900 dark:text-zinc-100">{tx.title}</div>
                       {tx.description && (
-                        <div className="text-[11px] text-zinc-500 truncate max-w-xs mt-0.5">
+                        <div className="text-[11px] text-slate-500 dark:text-zinc-500 truncate max-w-xs mt-0.5">
                           {tx.description}
                         </div>
                       )}

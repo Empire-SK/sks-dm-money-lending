@@ -14,13 +14,13 @@ export default {
         extend: {
             colors: {
                 brand: {
-                    lime: '#A3E635',       // Vibrant lime green from reference Image 1
-                    'lime-light': '#BEF264',
-                    'lime-dark': '#65A30D',
-                    forest: '#0D2A18',     // Deep forest contrast pill/text
-                    'forest-light': '#1A4329',
-                    canvas: '#F4F5F7',     // Crisp soft light canvas
-                    surface: '#FFFFFF',    // Pure white bento cards
+                    emerald: '#059669',     // Rich modern emerald green that matches white perfectly
+                    'emerald-hover': '#047857',
+                    'emerald-light': '#ECFDF5',
+                    'emerald-dark': '#064E3B',
+                    forest: '#064E3B',      // Deep sophisticated forest contrast
+                    canvas: '#F8FAFC',      // Soft clean canvas
+                    surface: '#FFFFFF',     // Crisp pure white cards
                 }
             },
             borderRadius: {

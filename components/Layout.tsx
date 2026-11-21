@@ -84,12 +84,12 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 sm:py-5 border-b border-gray-100 dark:border-zinc-800/80">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-[#A3E635] text-[#0D2A18] flex items-center justify-center flex-shrink-0 shadow-sm font-bold">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm font-bold">
               <TrendingUp size={18} strokeWidth={2.5} />
             </div>
             <div>
               <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 leading-none">SKS DM Platform</p>
-              <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 leading-none font-medium">Lending & Expense Manager</p>
+              <p className="text-[10px] text-slate-500 dark:text-zinc-500 mt-1 leading-none font-medium">Lending & Expense Manager</p>
             </div>
           </div>
           <button
@@ -122,17 +122,17 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                     transition-all duration-200
                     ${
                       isActive
-                        ? 'bg-[#A3E635] text-[#0D2A18] shadow-sm font-bold dark:bg-emerald-600/15 dark:text-emerald-400 dark:border dark:border-emerald-500/20'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-gray-100/80 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/70'
+                        ? 'bg-emerald-600 text-white shadow-sm font-bold dark:bg-emerald-600/20 dark:text-emerald-400 dark:border dark:border-emerald-500/20'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/70'
                     }
                   `}
                 >
                   {({ isActive }) => (
                     <>
-                      <item.icon size={18} className={isActive ? 'text-[#0D2A18] dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500'} />
+                      <item.icon size={18} className={isActive ? 'text-white dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500'} />
                       <span>{item.name}</span>
                       {isActive && (
-                        <span className="ml-auto w-2 h-2 rounded-full bg-[#0D2A18] dark:bg-emerald-400" />
+                        <span className="ml-auto w-2 h-2 rounded-full bg-white dark:bg-emerald-400" />
                       )}
                     </>
                   )}
@@ -164,8 +164,8 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                       transition-all duration-200
                       ${
                         isActive
-                          ? 'bg-[#A3E635] text-[#0D2A18] shadow-sm font-bold dark:bg-emerald-600/15 dark:text-emerald-400 dark:border dark:border-emerald-500/20'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-gray-100/80 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/70'
+                          ? 'bg-emerald-600 text-white shadow-sm font-bold dark:bg-emerald-600/20 dark:text-emerald-400 dark:border dark:border-emerald-500/20'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/70'
                       }
                     `}
                   >
@@ -173,11 +173,11 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
                       <>
                         <item.icon
                           size={16}
-                          className={isActive ? 'text-[#0D2A18] dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500'}
+                          className={isActive ? 'text-white dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500'}
                         />
                         <span>{item.name}</span>
                         {isActive && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#0D2A18] dark:bg-emerald-400" />
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white dark:bg-emerald-400" />
                         )}
                       </>
                     )}
@@ -251,7 +251,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
         {/* Mobile Header */}
         <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-zinc-900 border-b border-gray-200/80 dark:border-zinc-800/80 z-20 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#A3E635] text-[#0D2A18] flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm">
               <TrendingUp size={16} strokeWidth={2.5} />
             </div>
             <span className="font-bold text-slate-900 dark:text-zinc-100 text-sm">

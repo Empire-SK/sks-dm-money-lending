@@ -151,36 +151,36 @@ input[type="month"]::-webkit-calendar-picker-indicator {
 /* ── Glass card & Bento utilities ── */
 @layer components {
   .glass-card {
-    @apply bg-white dark:bg-zinc-900/60 backdrop-blur-xl border border-gray-200/80 dark:border-zinc-800/80 rounded-3xl shadow-sm dark:shadow-none transition-all duration-200;
+    @apply bg-white dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-800/80 rounded-3xl shadow-sm dark:shadow-none transition-all duration-200;
   }
   .glass-card-sm {
-    @apply bg-white dark:bg-zinc-900/60 backdrop-blur-xl border border-gray-200/80 dark:border-zinc-800/80 rounded-2xl shadow-sm dark:shadow-none transition-all duration-200;
+    @apply bg-white dark:bg-zinc-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-zinc-800/80 rounded-2xl shadow-sm dark:shadow-none transition-all duration-200;
   }
   .bento-highlight-card {
-    @apply bg-[#A3E635] text-[#0D2A18] rounded-3xl shadow-md p-5 relative overflow-hidden transition-all duration-200;
+    @apply bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white rounded-3xl shadow-lg p-5 relative overflow-hidden transition-all duration-200;
   }
   .input-base {
-    @apply block w-full bg-gray-50/90 dark:bg-zinc-950/80 border border-gray-200 dark:border-zinc-700/60 rounded-xl text-gray-900 dark:text-zinc-100
-    placeholder-gray-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-lime-500/50 dark:focus:ring-emerald-500/60
-    focus:border-lime-500 dark:focus:border-emerald-500/50 transition-all duration-200 text-sm px-4 py-2 sm:py-2.5;
+    @apply block w-full bg-white dark:bg-zinc-950/80 border border-slate-300 dark:border-zinc-700/60 rounded-xl text-slate-900 dark:text-zinc-100
+    placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 dark:focus:ring-emerald-500/60
+    focus:border-emerald-600 dark:focus:border-emerald-500/50 transition-all duration-200 text-sm px-4 py-2 sm:py-2.5 font-medium;
   }
   .label-base {
-    @apply block text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1 sm:mb-1.5;
+    @apply block text-[10px] sm:text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1 sm:mb-1.5;
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl
-    bg-[#A3E635] hover:bg-[#bef264] text-[#0D2A18] text-sm font-bold
+    bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold
     shadow-sm hover:shadow transition-all duration-200
     active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
-    bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-gray-200/80 dark:border-zinc-700/60 text-gray-800 dark:text-zinc-200
-    text-sm font-semibold transition-all duration-200 active:scale-[0.97];
+    bg-white hover:bg-slate-50 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700/60 text-slate-700 dark:text-zinc-200
+    text-sm font-bold transition-all duration-200 active:scale-[0.97] shadow-sm;
   }
   .btn-forest {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full
-    bg-[#0D2A18] hover:bg-[#163e26] text-white text-xs font-semibold
+    bg-emerald-900 hover:bg-emerald-950 text-white text-xs font-bold
     shadow-sm transition-all duration-200 active:scale-[0.97];
   }
   .btn-ghost {

@@ -187,24 +187,31 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           ? 'income'
           : (categoryId || activeCategories[0]?.id || 'cat_default_1');
 
-      const txPayload = {
+      const txPayload: any = {
         userId: currentUser?.uid || '',
         type,
         title: title.trim() || (type === 'transfer' && transferCategory === 'savings' ? 'Savings' : `${type.charAt(0).toUpperCase() + type.slice(1)} transaction`),
         amount: numAmount,
         categoryId: effectiveCategoryId,
-        subcategory: (type === 'transfer' || type === 'income') ? undefined : subcategory.trim() || undefined,
         accountId: effectiveAccountId,
-        toAccountId: type === 'transfer' ? (toAccountId || activeAccounts[1]?.id) : undefined,
-        transferCategory: type === 'transfer' ? transferCategory : undefined,
-        isDedicatedSavings: type === 'transfer' ? isDedicated : undefined,
-        originalTransactionId: type === 'refund' && originalTxId ? originalTxId : undefined,
         date,
-        description: description.trim() || undefined,
-        notes: notes.trim() || undefined,
-        receiptUrl: receiptUrl || undefined,
-        receiptName: receiptName || undefined,
       };
+
+      if (type !== 'transfer' && type !== 'income' && subcategory.trim()) {
+        txPayload.subcategory = subcategory.trim();
+      }
+      if (type === 'transfer') {
+        txPayload.toAccountId = toAccountId || activeAccounts[1]?.id;
+        if (transferCategory) txPayload.transferCategory = transferCategory;
+        txPayload.isDedicatedSavings = isDedicated;
+      }
+      if (type === 'refund' && originalTxId) {
+        txPayload.originalTransactionId = originalTxId;
+      }
+      if (description.trim()) txPayload.description = description.trim();
+      if (notes.trim()) txPayload.notes = notes.trim();
+      if (receiptUrl) txPayload.receiptUrl = receiptUrl;
+      if (receiptName) txPayload.receiptName = receiptName;
 
       if (initialData) {
         await handleEditTransaction({ ...initialData, ...txPayload });

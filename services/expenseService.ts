@@ -3,6 +3,7 @@ import {
   collection,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -37,6 +38,20 @@ const CATEGORIES_COLLECTION = 'expense_categories';
 const SALARY_COLLECTION = 'salary_records';
 const TRANSACTIONS_COLLECTION = 'expense_transactions';
 const BUDGETS_COLLECTION = 'expense_budgets';
+
+/**
+ * Strips all undefined fields recursively/shallowly so Firestore never throws
+ * "Unsupported field value: undefined" error.
+ */
+export const cleanForFirestore = <T extends Record<string, any>>(obj: T): Partial<T> => {
+  const clean: any = {};
+  Object.entries(obj).forEach(([key, val]) => {
+    if (val !== undefined) {
+      clean[key] = val;
+    }
+  });
+  return clean;
+};
 
 /* ── Local Storage Helper for Offline / Fallback Resilience ── */
 const getLocalData = <T>(key: string, fallback: T): T => {
@@ -275,7 +290,7 @@ export const addExpenseAccount = async (
   };
 
   try {
-    const ref = await addDoc(collection(db, ACCOUNTS_COLLECTION), newDoc);
+    const ref = await addDoc(collection(db, ACCOUNTS_COLLECTION), cleanForFirestore(newDoc));
     createdId = ref.id;
   } catch (err) {
     console.warn('Firestore addExpenseAccount failed, saving locally:', err);
@@ -295,11 +310,11 @@ export const updateExpenseAccount = async (
   try {
     const ref = doc(db, ACCOUNTS_COLLECTION, account.id);
     const { id, ...data } = account;
-    await updateDoc(ref, {
+    await updateDoc(ref, cleanForFirestore({
       ...data,
       openingBalance: roundCurrency(account.openingBalance || 0),
       updatedAt: new Date().toISOString(),
-    });
+    }));
   } catch (err) {
     console.warn('Firestore updateExpenseAccount failed, updating locally:', err);
   }
@@ -418,7 +433,7 @@ export const addExpenseCategory = async (
   };
 
   try {
-    const ref = await addDoc(collection(db, CATEGORIES_COLLECTION), newDoc);
+    const ref = await addDoc(collection(db, CATEGORIES_COLLECTION), cleanForFirestore(newDoc));
     createdId = ref.id;
   } catch (err) {
     console.warn('Firestore addExpenseCategory failed, saving locally:', err);
@@ -438,7 +453,7 @@ export const updateExpenseCategory = async (
   try {
     const ref = doc(db, CATEGORIES_COLLECTION, category.id);
     const { id, ...data } = category;
-    await updateDoc(ref, data);
+    await updateDoc(ref, cleanForFirestore(data));
   } catch (err) {
     console.warn('Firestore updateExpenseCategory failed:', err);
   }
@@ -550,7 +565,7 @@ export const addSalaryRecord = async (
   };
 
   try {
-    const salaryRef = await addDoc(collection(db, SALARY_COLLECTION), newSalary);
+    const salaryRef = await addDoc(collection(db, SALARY_COLLECTION), cleanForFirestore(newSalary));
     salaryId = salaryRef.id;
   } catch (err) {
     console.warn('Firestore addSalaryRecord failed, using local id:', err);
@@ -565,6 +580,7 @@ export const addSalaryRecord = async (
 
   const linkedTransaction: Omit<ExpenseTransaction, 'id'> = {
     userId: salaryData.userId,
+    userEmail: userEmail?.toLowerCase().trim() || null,
     type: 'income',
     title: `Monthly Salary (${monthName})`,
     amount: total,
@@ -578,7 +594,7 @@ export const addSalaryRecord = async (
   };
 
   try {
-    await addDoc(collection(db, TRANSACTIONS_COLLECTION), linkedTransaction);
+    await addDoc(collection(db, TRANSACTIONS_COLLECTION), cleanForFirestore(linkedTransaction));
   } catch (err) {
     console.warn('Firestore linked transaction add failed:', err);
   }
@@ -611,7 +627,7 @@ export const updateSalaryRecord = async (
   try {
     const salaryRef = doc(db, SALARY_COLLECTION, salary.id);
     const { id, ...data } = salary;
-    await updateDoc(salaryRef, {
+    await updateDoc(salaryRef, cleanForFirestore({
       ...data,
       baseSalary: roundCurrency(salary.baseSalary || 0),
       bonus: roundCurrency(salary.bonus || 0),
@@ -619,7 +635,7 @@ export const updateSalaryRecord = async (
       otherIncome: roundCurrency(salary.otherIncome || 0),
       totalIncome: total,
       updatedAt: now,
-    });
+    }));
   } catch (err) {
     console.warn('Firestore updateSalaryRecord failed:', err);
   }
@@ -685,30 +701,11 @@ export const getExpenseTransactions = async (
     }
   } else {
     // Non-admin user (e.g. amil@sksdm.com):
-    // Purge any admin baseline transactions (Popcorn, Ramayana movie, SIP, etc.) so this workspace is completely clean
-    const hasAdminTxs = localTxs.some(
-      (t) =>
-        t.title === 'Popcorn' ||
-        t.title === 'Movie- ramayana' ||
-        t.title === 'SIP' ||
-        t.title === 'Bajikada' ||
-        t.title === 'Movie - scene' ||
-        t.title === 'turf' ||
-        t.title === 'masaladosa' ||
-        t.title === 'Petrol' ||
-        t.title === 'Dinner' ||
-        t.title === 'Groceries' ||
-        t.title === 'Bus ticket' ||
-        t.title === 'Coffee' ||
-        t.title === 'Snacks' ||
-        t.title === 'Monthly Salary (November 2026)' ||
-        t.id.includes('_popcorn') ||
-        t.id.includes('_sip') ||
-        (t.accountId && t.accountId.includes('canara'))
-    );
-    if (hasAdminTxs) {
-      localTxs = [];
-      setLocalData(localKey, []);
+    // Only strip any admin baseline preset transactions (starting with tx_admin_), preserving any real user-entered transactions!
+    const filteredTxs = localTxs.filter((t) => !t.id.startsWith('tx_admin_') && !t.id.includes('_popcorn') && !t.id.includes('_sip'));
+    if (filteredTxs.length !== localTxs.length) {
+      localTxs = filteredTxs;
+      setLocalData(localKey, localTxs);
     }
   }
 
@@ -719,13 +716,33 @@ export const getExpenseTransactions = async (
         where('userId', '==', userId)
       );
       const snap = await getDocs(q);
-      if (!snap.empty) {
-        const transactions = snap.docs.map(
-          (d) => ({ ...d.data(), id: d.id } as ExpenseTransaction)
-        );
-        setLocalData(localKey, transactions);
-        return transactions.sort((a, b) => b.date.localeCompare(a.date));
+      const remoteTxs = snap.docs.map(
+        (d) => ({ ...d.data(), id: d.id } as ExpenseTransaction)
+      );
+
+      // Auto-sync: Push any local transactions not yet in Firestore (e.g. entered on mobile)
+      const remoteIds = new Set(remoteTxs.map((t) => t.id));
+      for (const localTx of localTxs) {
+        if (!remoteIds.has(localTx.id)) {
+          try {
+            await setDoc(
+              doc(db, TRANSACTIONS_COLLECTION, localTx.id),
+              cleanForFirestore({
+                ...localTx,
+                userId,
+                userEmail: userEmail?.toLowerCase().trim() || null,
+              })
+            );
+            remoteTxs.push(localTx);
+          } catch (syncErr) {
+            console.warn('Failed to sync local tx to Firestore:', syncErr);
+          }
+        }
       }
+
+      const merged = remoteTxs.length > 0 ? remoteTxs : localTxs;
+      setLocalData(localKey, merged);
+      return merged.sort((a, b) => b.date.localeCompare(a.date));
     }
   } catch (err) {
     console.warn('Firestore getExpenseTransactions failed, using local:', err);
@@ -744,12 +761,13 @@ export const addExpenseTransaction = async (
   const newDoc = {
     ...txData,
     amount: roundCurrency(txData.amount || 0),
+    userEmail: userEmail?.toLowerCase().trim() || null,
     createdAt: now,
     updatedAt: now,
   };
 
   try {
-    const ref = await addDoc(collection(db, TRANSACTIONS_COLLECTION), newDoc);
+    const ref = await addDoc(collection(db, TRANSACTIONS_COLLECTION), cleanForFirestore(newDoc));
     createdId = ref.id;
   } catch (err) {
     console.warn('Firestore addExpenseTransaction failed, saving locally:', err);
@@ -769,11 +787,12 @@ export const updateExpenseTransaction = async (
   try {
     const ref = doc(db, TRANSACTIONS_COLLECTION, tx.id);
     const { id, ...data } = tx;
-    await updateDoc(ref, {
+    await updateDoc(ref, cleanForFirestore({
       ...data,
       amount: roundCurrency(tx.amount || 0),
+      userEmail: userEmail?.toLowerCase().trim() || null,
       updatedAt: new Date().toISOString(),
-    });
+    }));
   } catch (err) {
     console.warn('Firestore updateExpenseTransaction failed:', err);
   }
@@ -876,13 +895,13 @@ export const saveMonthlyBudget = async (
       if (!snap.empty) {
         const existingDoc = snap.docs[0];
         budgetId = existingDoc.id;
-        await updateDoc(doc(db, BUDGETS_COLLECTION, budgetId), {
+        await updateDoc(doc(db, BUDGETS_COLLECTION, budgetId), cleanForFirestore({
           overallBudget: roundedOverall,
           categoryBudgets: cleanedCategoryBudgets,
           updatedAt: now,
-        });
+        }));
       } else {
-        const ref = await addDoc(collection(db, BUDGETS_COLLECTION), newDoc);
+        const ref = await addDoc(collection(db, BUDGETS_COLLECTION), cleanForFirestore(newDoc));
         budgetId = ref.id;
       }
     }

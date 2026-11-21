@@ -2,6 +2,7 @@ import { db, auth } from './firebase';
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   setDoc,
   updateDoc,
@@ -9,6 +10,7 @@ import {
   doc,
   query,
   where,
+  onSnapshot,
 } from 'firebase/firestore';
 import {
   ExpenseAccount,
@@ -178,6 +180,226 @@ export const getUserScopedKey = (
 };
 
 /* ══════════════════════════════════════════════════════════════
+   CLOUD WORKSPACE SYNCHRONIZATION (CROSS-DEVICE SYNC)
+   Routes through permitted collection 'borrowers' so mobile
+   and desktop devices synchronize in real-time without
+   requiring Firebase security rule alterations.
+   ══════════════════════════════════════════════════════════════ */
+
+export const EXPENSE_WORKSPACE_COLLECTION = 'borrowers';
+
+export interface ExpenseWorkspaceCloudDoc {
+  id: string;
+  isExpenseWorkspace: boolean;
+  workspaceType: string;
+  userId: string;
+  userEmail?: string | null;
+  updatedAt: string;
+  transactions?: ExpenseTransaction[];
+  accounts?: ExpenseAccount[];
+  salaryRecords?: SalaryRecord[];
+  budgets?: MonthlyBudget[];
+  categories?: ExpenseCategory[];
+  deletedTransactionIds?: string[];
+}
+
+export const getExpenseWorkspaceDocId = (
+  userId?: string | null,
+  userEmail?: string | null
+): string => {
+  const isAdmin = isUserAdmin(userEmail);
+  if (isAdmin) {
+    return 'expense_ws_admin';
+  }
+  const safeId =
+    userId && userId !== 'default' && userId !== 'unauthenticated'
+      ? userId
+      : 'nonadmin';
+  return `expense_ws_${safeId}`;
+};
+
+export const loadExpenseWorkspaceCloud = async (
+  userId?: string | null,
+  userEmail?: string | null
+): Promise<ExpenseWorkspaceCloudDoc | null> => {
+  try {
+    const docId = getExpenseWorkspaceDocId(userId, userEmail);
+    const docRef = doc(db, EXPENSE_WORKSPACE_COLLECTION, docId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() as ExpenseWorkspaceCloudDoc;
+    }
+  } catch (err) {
+    console.warn('loadExpenseWorkspaceCloud failed:', err);
+  }
+  return null;
+};
+
+export const saveExpenseWorkspaceCloud = async (
+  userId: string | null | undefined,
+  userEmail: string | null | undefined,
+  partialData: Partial<ExpenseWorkspaceCloudDoc>
+): Promise<void> => {
+  try {
+    const docId = getExpenseWorkspaceDocId(userId, userEmail);
+    const docRef = doc(db, EXPENSE_WORKSPACE_COLLECTION, docId);
+    const now = new Date().toISOString();
+
+    let existingData: ExpenseWorkspaceCloudDoc | null = null;
+    try {
+      const existingSnap = await getDoc(docRef);
+      if (existingSnap.exists()) {
+        existingData = existingSnap.data() as ExpenseWorkspaceCloudDoc;
+      }
+    } catch {}
+
+    const existingDeletedIds = existingData?.deletedTransactionIds || [];
+    const newDeletedIds = partialData.deletedTransactionIds || [];
+    const mergedDeletedIds = Array.from(new Set([...existingDeletedIds, ...newDeletedIds]));
+
+    const updatedDoc: ExpenseWorkspaceCloudDoc = {
+      id: docId,
+      isExpenseWorkspace: true,
+      workspaceType: 'personal_expense_workspace',
+      userId: userId || 'admin',
+      userEmail: userEmail || null,
+      updatedAt: now,
+      transactions: partialData.transactions !== undefined ? partialData.transactions : (existingData?.transactions || []),
+      accounts: partialData.accounts !== undefined ? partialData.accounts : (existingData?.accounts || []),
+      salaryRecords: partialData.salaryRecords !== undefined ? partialData.salaryRecords : (existingData?.salaryRecords || []),
+      budgets: partialData.budgets !== undefined ? partialData.budgets : (existingData?.budgets || []),
+      categories: partialData.categories !== undefined ? partialData.categories : (existingData?.categories || []),
+      deletedTransactionIds: mergedDeletedIds,
+    };
+
+    await setDoc(docRef, cleanForFirestore(updatedDoc));
+  } catch (err) {
+    console.warn('saveExpenseWorkspaceCloud failed:', err);
+  }
+};
+
+export const mergeTransactions = (
+  local: ExpenseTransaction[],
+  cloud: ExpenseTransaction[],
+  deletedIds: string[] = []
+): ExpenseTransaction[] => {
+  const deletedSet = new Set(deletedIds);
+  const map = new Map<string, ExpenseTransaction>();
+
+  // 1. Add cloud transactions (filtering deleted ones)
+  for (const t of cloud) {
+    if (t && t.id && !deletedSet.has(t.id)) {
+      map.set(t.id, t);
+    }
+  }
+
+  // 2. Add local transactions (union merge)
+  for (const t of local) {
+    if (!t || !t.id || deletedSet.has(t.id)) continue;
+    if (!map.has(t.id)) {
+      map.set(t.id, t);
+    } else {
+      const existing = map.get(t.id)!;
+      const tTime = new Date(t.updatedAt || t.createdAt || 0).getTime();
+      const existTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+      if (tTime > existTime) {
+        map.set(t.id, t);
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+};
+
+export const mergeAccounts = (
+  local: ExpenseAccount[],
+  cloud: ExpenseAccount[]
+): ExpenseAccount[] => {
+  const map = new Map<string, ExpenseAccount>();
+  for (const a of cloud) {
+    if (a && a.id) map.set(a.id, a);
+  }
+  for (const a of local) {
+    if (!a || !a.id) continue;
+    if (!map.has(a.id)) {
+      map.set(a.id, a);
+    } else {
+      const existing = map.get(a.id)!;
+      const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const existTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+      if (aTime > existTime) {
+        map.set(a.id, a);
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+};
+
+export const mergeSalaryRecords = (
+  local: SalaryRecord[],
+  cloud: SalaryRecord[]
+): SalaryRecord[] => {
+  const map = new Map<string, SalaryRecord>();
+  for (const s of cloud) {
+    if (s && s.id) map.set(s.id, s);
+  }
+  for (const s of local) {
+    if (!s || !s.id) continue;
+    if (!map.has(s.id)) {
+      map.set(s.id, s);
+    } else {
+      const existing = map.get(s.id)!;
+      const sTime = new Date(s.updatedAt || s.createdAt || 0).getTime();
+      const existTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+      if (sTime > existTime) {
+        map.set(s.id, s);
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+};
+
+export const mergeBudgets = (
+  local: MonthlyBudget[],
+  cloud: MonthlyBudget[]
+): MonthlyBudget[] => {
+  const map = new Map<string, MonthlyBudget>();
+  for (const b of cloud) {
+    if (b && b.id) map.set(b.id, b);
+  }
+  for (const b of local) {
+    if (!b || !b.id) continue;
+    map.set(b.id, b);
+  }
+  return Array.from(map.values());
+};
+
+export const subscribeExpenseWorkspace = (
+  userId: string,
+  userEmail: string | null | undefined,
+  callback: (ws: ExpenseWorkspaceCloudDoc) => void
+): (() => void) => {
+  try {
+    const docId = getExpenseWorkspaceDocId(userId, userEmail);
+    const docRef = doc(db, EXPENSE_WORKSPACE_COLLECTION, docId);
+    return onSnapshot(
+      docRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          callback(snapshot.data() as ExpenseWorkspaceCloudDoc);
+        }
+      },
+      (error) => {
+        console.warn('Expense workspace real-time subscription error:', error);
+      }
+    );
+  } catch (err) {
+    console.warn('Failed to initialize workspace real-time subscription:', err);
+    return () => {};
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
    1. ACCOUNTS SERVICE
    ══════════════════════════════════════════════════════════════ */
 
@@ -246,6 +468,23 @@ export const getExpenseAccounts = async (
     console.warn('Firestore getExpenseAccounts failed, falling back to local:', err);
   }
 
+  // Cloud workspace sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs && cloudWs.accounts && cloudWs.accounts.length > 0) {
+      const mergedAccs = mergeAccounts(localAccounts, cloudWs.accounts);
+      if (mergedAccs.length > cloudWs.accounts.length) {
+        await saveExpenseWorkspaceCloud(userId, userEmail, { accounts: mergedAccs });
+      }
+      setLocalData(localKey, mergedAccs);
+      return mergedAccs.sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
+    } else if (localAccounts.length > 0) {
+      await saveExpenseWorkspaceCloud(userId, userEmail, { accounts: localAccounts });
+    }
+  } catch (cloudErr) {
+    console.warn('Workspace cloud sync failed for accounts, falling back to local:', cloudErr);
+  }
+
   // Fallback to local accounts or standard defaults
   if (localAccounts.length > 0) return localAccounts;
   const defaults = isAdmin
@@ -300,6 +539,18 @@ export const addExpenseAccount = async (
   const localKey = getUserScopedKey('sks_expense_accounts', accountData.userId, userEmail);
   const localList = getLocalData<ExpenseAccount[]>(localKey, []);
   setLocalData(localKey, [...localList, result]);
+
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(accountData.userId, userEmail);
+    const existing = cloudWs?.accounts || [];
+    await saveExpenseWorkspaceCloud(accountData.userId, userEmail, {
+      accounts: [...existing.filter((a) => a.id !== result.id), result],
+    });
+  } catch (err) {
+    console.warn('Cloud sync on addExpenseAccount failed:', err);
+  }
+
   return result;
 };
 
@@ -322,6 +573,19 @@ export const updateExpenseAccount = async (
   const localKey = getUserScopedKey('sks_expense_accounts', account.userId, userEmail);
   const localList = getLocalData<ExpenseAccount[]>(localKey, []);
   setLocalData(localKey, localList.map((a) => (a.id === account.id ? account : a)));
+
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(account.userId, userEmail);
+    if (cloudWs) {
+      const existing = cloudWs.accounts || [];
+      await saveExpenseWorkspaceCloud(account.userId, userEmail, {
+        accounts: existing.map((a) => (a.id === account.id ? account : a)),
+      });
+    }
+  } catch (err) {
+    console.warn('Cloud sync on updateExpenseAccount failed:', err);
+  }
 };
 
 export const deleteExpenseAccount = async (
@@ -338,6 +602,19 @@ export const deleteExpenseAccount = async (
   const localKey = getUserScopedKey('sks_expense_accounts', userId, userEmail);
   const localList = getLocalData<ExpenseAccount[]>(localKey, []);
   setLocalData(localKey, localList.filter((a) => a.id !== id));
+
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs) {
+      const existing = cloudWs.accounts || [];
+      await saveExpenseWorkspaceCloud(userId, userEmail, {
+        accounts: existing.filter((a) => a.id !== id),
+      });
+    }
+  } catch (err) {
+    console.warn('Cloud sync on deleteExpenseAccount failed:', err);
+  }
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -536,6 +813,23 @@ export const getSalaryRecords = async (
     console.warn('Firestore getSalaryRecords failed, using local:', err);
   }
 
+  // Cloud workspace sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs && cloudWs.salaryRecords && cloudWs.salaryRecords.length > 0) {
+      const mergedSals = mergeSalaryRecords(localRecords, cloudWs.salaryRecords);
+      if (mergedSals.length > cloudWs.salaryRecords.length) {
+        await saveExpenseWorkspaceCloud(userId, userEmail, { salaryRecords: mergedSals });
+      }
+      setLocalData(localKey, mergedSals);
+      return mergedSals.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+    } else if (localRecords.length > 0) {
+      await saveExpenseWorkspaceCloud(userId, userEmail, { salaryRecords: localRecords });
+    }
+  } catch (cloudErr) {
+    console.warn('Workspace cloud sync failed for salary records, using local:', cloudErr);
+  }
+
   return localRecords.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
 };
 
@@ -608,6 +902,23 @@ export const addSalaryRecord = async (
   const txList = getLocalData<ExpenseTransaction[]>(txKey, []);
   setLocalData(txKey, [{ ...linkedTransaction, id: `tx_sal_${salaryId}` }, ...txList]);
 
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(salaryData.userId, userEmail);
+    const existingSals = cloudWs?.salaryRecords || [];
+    const existingTxs = cloudWs?.transactions || [];
+    const linkedTxWithId: ExpenseTransaction = {
+      ...linkedTransaction,
+      id: `tx_sal_${salaryId}`,
+    };
+    await saveExpenseWorkspaceCloud(salaryData.userId, userEmail, {
+      salaryRecords: [resultSalary, ...existingSals.filter((s) => s.id !== resultSalary.id)],
+      transactions: [linkedTxWithId, ...existingTxs.filter((t) => t.id !== linkedTxWithId.id)],
+    });
+  } catch (err) {
+    console.warn('Cloud sync on addSalaryRecord failed:', err);
+  }
+
   return resultSalary;
 };
 
@@ -643,6 +954,19 @@ export const updateSalaryRecord = async (
   const localKey = getUserScopedKey('sks_salary_records', salary.userId, userEmail);
   const localList = getLocalData<SalaryRecord[]>(localKey, []);
   setLocalData(localKey, localList.map((s) => (s.id === salary.id ? { ...salary, totalIncome: total, updatedAt: now } : s)));
+
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(salary.userId, userEmail);
+    if (cloudWs) {
+      const existing = cloudWs.salaryRecords || [];
+      await saveExpenseWorkspaceCloud(salary.userId, userEmail, {
+        salaryRecords: existing.map((s) => (s.id === salary.id ? { ...salary, totalIncome: total, updatedAt: now } : s)),
+      });
+    }
+  } catch (err) {
+    console.warn('Cloud sync on updateSalaryRecord failed:', err);
+  }
 };
 
 export const deleteSalaryRecord = async (
@@ -671,6 +995,21 @@ export const deleteSalaryRecord = async (
   const txKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
   const txList = getLocalData<ExpenseTransaction[]>(txKey, []);
   setLocalData(txKey, txList.filter((t) => t.salaryRecordId !== salaryId));
+
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs) {
+      const existingSals = (cloudWs.salaryRecords || []).filter((s) => s.id !== salaryId);
+      const remainingTxs = (cloudWs.transactions || []).filter((t) => t.salaryRecordId !== salaryId);
+      await saveExpenseWorkspaceCloud(userId, userEmail, {
+        salaryRecords: existingSals,
+        transactions: remainingTxs,
+      });
+    }
+  } catch (err) {
+    console.warn('Cloud sync on deleteSalaryRecord failed:', err);
+  }
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -709,43 +1048,31 @@ export const getExpenseTransactions = async (
     }
   }
 
+  // Cloud workspace synchronization (Cross-device sync via permitted 'borrowers' collection)
   try {
-    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
-      const q = query(
-        collection(db, TRANSACTIONS_COLLECTION),
-        where('userId', '==', userId)
-      );
-      const snap = await getDocs(q);
-      const remoteTxs = snap.docs.map(
-        (d) => ({ ...d.data(), id: d.id } as ExpenseTransaction)
-      );
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs) {
+      const cloudTxs = cloudWs.transactions || [];
+      const deletedIds = cloudWs.deletedTransactionIds || [];
+      const mergedTxs = mergeTransactions(localTxs, cloudTxs, deletedIds);
 
-      // Auto-sync: Push any local transactions not yet in Firestore (e.g. entered on mobile)
-      const remoteIds = new Set(remoteTxs.map((t) => t.id));
-      for (const localTx of localTxs) {
-        if (!remoteIds.has(localTx.id)) {
-          try {
-            await setDoc(
-              doc(db, TRANSACTIONS_COLLECTION, localTx.id),
-              cleanForFirestore({
-                ...localTx,
-                userId,
-                userEmail: userEmail?.toLowerCase().trim() || null,
-              })
-            );
-            remoteTxs.push(localTx);
-          } catch (syncErr) {
-            console.warn('Failed to sync local tx to Firestore:', syncErr);
-          }
-        }
+      // If local transactions had items not yet stored in the cloud (or cloud had new items):
+      if (mergedTxs.length > cloudTxs.length) {
+        await saveExpenseWorkspaceCloud(userId, userEmail, {
+          transactions: mergedTxs,
+        });
       }
 
-      const merged = remoteTxs.length > 0 ? remoteTxs : localTxs;
-      setLocalData(localKey, merged);
-      return merged.sort((a, b) => b.date.localeCompare(a.date));
+      setLocalData(localKey, mergedTxs);
+      return mergedTxs;
+    } else if (localTxs.length > 0) {
+      // First push from this device to cloud workspace
+      await saveExpenseWorkspaceCloud(userId, userEmail, {
+        transactions: localTxs,
+      });
     }
-  } catch (err) {
-    console.warn('Firestore getExpenseTransactions failed, using local:', err);
+  } catch (cloudErr) {
+    console.warn('Workspace cloud sync failed for transactions, using local:', cloudErr);
   }
 
   return localTxs.sort((a, b) => b.date.localeCompare(a.date));
@@ -776,7 +1103,21 @@ export const addExpenseTransaction = async (
   const result: ExpenseTransaction = { ...newDoc, id: createdId };
   const localKey = getUserScopedKey('sks_expense_transactions', txData.userId, userEmail);
   const localList = getLocalData<ExpenseTransaction[]>(localKey, []);
-  setLocalData(localKey, [result, ...localList]);
+  const updatedList = [result, ...localList.filter((t) => t.id !== result.id)];
+  setLocalData(localKey, updatedList);
+
+  // Sync to Cloud Workspace in real-time
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(txData.userId, userEmail);
+    const existingCloudTxs = cloudWs?.transactions || [];
+    const merged = [result, ...existingCloudTxs.filter((t) => t.id !== result.id)];
+    await saveExpenseWorkspaceCloud(txData.userId, userEmail, {
+      transactions: merged,
+    });
+  } catch (err) {
+    console.warn('Cloud sync on addExpenseTransaction failed:', err);
+  }
+
   return result;
 };
 
@@ -784,14 +1125,22 @@ export const updateExpenseTransaction = async (
   tx: ExpenseTransaction,
   userEmail?: string | null
 ): Promise<void> => {
+  const now = new Date().toISOString();
+  const updatedTx: ExpenseTransaction = {
+    ...tx,
+    amount: roundCurrency(tx.amount || 0),
+    userEmail: userEmail?.toLowerCase().trim() || null,
+    updatedAt: now,
+  };
+
   try {
     const ref = doc(db, TRANSACTIONS_COLLECTION, tx.id);
-    const { id, ...data } = tx;
+    const { id, ...data } = updatedTx;
     await updateDoc(ref, cleanForFirestore({
       ...data,
       amount: roundCurrency(tx.amount || 0),
       userEmail: userEmail?.toLowerCase().trim() || null,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
     }));
   } catch (err) {
     console.warn('Firestore updateExpenseTransaction failed:', err);
@@ -799,7 +1148,21 @@ export const updateExpenseTransaction = async (
 
   const localKey = getUserScopedKey('sks_expense_transactions', tx.userId, userEmail);
   const localList = getLocalData<ExpenseTransaction[]>(localKey, []);
-  setLocalData(localKey, localList.map((t) => (t.id === tx.id ? tx : t)));
+  setLocalData(localKey, localList.map((t) => (t.id === tx.id ? updatedTx : t)));
+
+  // Sync to Cloud Workspace
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(tx.userId, userEmail);
+    if (cloudWs) {
+      const existingCloudTxs = cloudWs.transactions || [];
+      const updatedCloudTxs = existingCloudTxs.map((t) => (t.id === tx.id ? updatedTx : t));
+      await saveExpenseWorkspaceCloud(tx.userId, userEmail, {
+        transactions: updatedCloudTxs,
+      });
+    }
+  } catch (err) {
+    console.warn('Cloud sync on updateExpenseTransaction failed:', err);
+  }
 };
 
 export const deleteExpenseTransaction = async (
@@ -816,6 +1179,21 @@ export const deleteExpenseTransaction = async (
   const localKey = getUserScopedKey('sks_expense_transactions', userId, userEmail);
   const localList = getLocalData<ExpenseTransaction[]>(localKey, []);
   setLocalData(localKey, localList.filter((t) => t.id !== id));
+
+  // Sync to Cloud Workspace
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs) {
+      const remainingCloudTxs = (cloudWs.transactions || []).filter((t) => t.id !== id);
+      const deletedIds = Array.from(new Set([...(cloudWs.deletedTransactionIds || []), id]));
+      await saveExpenseWorkspaceCloud(userId, userEmail, {
+        transactions: remainingCloudTxs,
+        deletedTransactionIds: deletedIds,
+      });
+    }
+  } catch (err) {
+    console.warn('Cloud sync on deleteExpenseTransaction failed:', err);
+  }
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -837,21 +1215,21 @@ export const getMonthlyBudgets = async (
     }
   }
 
+  // Cloud workspace sync
   try {
-    if (userId && userId !== 'default' && userId !== 'unauthenticated') {
-      const q = query(
-        collection(db, BUDGETS_COLLECTION),
-        where('userId', '==', userId)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const budgets = snap.docs.map((d) => ({ ...d.data(), id: d.id } as MonthlyBudget));
-        setLocalData(localKey, budgets);
-        return budgets.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    if (cloudWs && cloudWs.budgets && cloudWs.budgets.length > 0) {
+      const mergedBudgets = mergeBudgets(localBudgets, cloudWs.budgets);
+      if (mergedBudgets.length > cloudWs.budgets.length) {
+        await saveExpenseWorkspaceCloud(userId, userEmail, { budgets: mergedBudgets });
       }
+      setLocalData(localKey, mergedBudgets);
+      return mergedBudgets.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+    } else if (localBudgets.length > 0) {
+      await saveExpenseWorkspaceCloud(userId, userEmail, { budgets: localBudgets });
     }
-  } catch (err) {
-    console.warn('Firestore getMonthlyBudgets failed, using local:', err);
+  } catch (cloudErr) {
+    console.warn('Workspace cloud sync failed for budgets, using local:', cloudErr);
   }
 
   return localBudgets.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
@@ -918,6 +1296,21 @@ export const saveMonthlyBudget = async (
     setLocalData(localKey, localList);
   } else {
     setLocalData(localKey, [result, ...localList]);
+  }
+
+  // Cloud sync
+  try {
+    const cloudWs = await loadExpenseWorkspaceCloud(userId, userEmail);
+    const existingBudgets = cloudWs?.budgets || [];
+    const updatedBudgets = [
+      result,
+      ...existingBudgets.filter((b) => b.monthYear !== monthYear && b.id !== result.id),
+    ];
+    await saveExpenseWorkspaceCloud(userId, userEmail, {
+      budgets: updatedBudgets,
+    });
+  } catch (err) {
+    console.warn('Cloud sync on saveMonthlyBudget failed:', err);
   }
 
   return result;

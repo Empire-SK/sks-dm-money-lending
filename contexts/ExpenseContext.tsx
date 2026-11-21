@@ -28,6 +28,7 @@ import {
   deleteExpenseTransaction,
   getMonthlyBudgets,
   saveMonthlyBudget,
+  subscribeExpenseWorkspace,
 } from '../services/expenseService';
 import {
   calculateAccountBalances,
@@ -188,6 +189,71 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     refreshData();
+  }, [refreshData]);
+
+  // Real-time synchronization subscription for mobile <-> desktop cross-device sync
+  useEffect(() => {
+    if (!userId) return;
+
+    const unsubscribe = subscribeExpenseWorkspace(userId, userEmail, (cloudWs) => {
+      if (!cloudWs || !cloudWs.isExpenseWorkspace) return;
+
+      if (cloudWs.transactions && Array.isArray(cloudWs.transactions)) {
+        const deletedSet = new Set(cloudWs.deletedTransactionIds || []);
+        const validTxs = cloudWs.transactions
+          .filter((t) => !deletedSet.has(t.id))
+          .sort((a, b) => b.date.localeCompare(a.date));
+
+        setTransactions((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(validTxs)) {
+            return validTxs;
+          }
+          return prev;
+        });
+      }
+
+      if (cloudWs.accounts && Array.isArray(cloudWs.accounts) && cloudWs.accounts.length > 0) {
+        setAccounts((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(cloudWs.accounts)) {
+            return cloudWs.accounts!;
+          }
+          return prev;
+        });
+      }
+
+      if (cloudWs.salaryRecords && Array.isArray(cloudWs.salaryRecords)) {
+        setSalaryRecords((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(cloudWs.salaryRecords)) {
+            return cloudWs.salaryRecords!;
+          }
+          return prev;
+        });
+      }
+
+      if (cloudWs.budgets && Array.isArray(cloudWs.budgets)) {
+        setBudgets((prev) => {
+          if (JSON.stringify(prev) !== JSON.stringify(cloudWs.budgets)) {
+            return cloudWs.budgets!;
+          }
+          return prev;
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [userId, userEmail]);
+
+  // Window focus & tab visibility listener to automatically refresh when switching back to tab
+  useEffect(() => {
+    const handleSync = () => {
+      refreshData();
+    };
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('visibilitychange', handleSync);
+    return () => {
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('visibilitychange', handleSync);
+    };
   }, [refreshData]);
 
   // Derived Account Balances (across all history)

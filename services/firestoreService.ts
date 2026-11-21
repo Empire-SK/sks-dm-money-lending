@@ -20,6 +20,10 @@ export const getBorrowers = async (user?: { uid: string; email?: string | null }
         email.startsWith('admin@');
 
     return all.filter(b => {
+        // Exclude system / expense workspace sync documents
+        if ((b as any).isExpenseWorkspace || b.id.startsWith('expense_')) {
+            return false;
+        }
         if (b.userId) {
             return b.userId === uid;
         }

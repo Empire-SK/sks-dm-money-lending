@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Tag, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
@@ -39,7 +39,15 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   const [subcategories, setSubcategories] = useState<string[]>([]);
   const [newSubcategory, setNewSubcategory] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -71,6 +79,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || isSubmittingRef.current) return;
     setError('');
 
     if (!name.trim()) {
@@ -79,6 +88,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     }
 
     try {
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
       const payload = {
         userId: currentUser?.uid || '',
@@ -100,6 +110,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       console.error(err);
       setError(err.message || 'Failed to save category.');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

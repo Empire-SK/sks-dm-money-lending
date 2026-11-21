@@ -170,7 +170,13 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       if (txsRes.status === 'fulfilled') {
-        setTransactions(txsRes.value);
+        const seen = new Set<string>();
+        const uniqueTxs = txsRes.value.filter((t) => {
+          if (!t || !t.id || seen.has(t.id)) return false;
+          seen.add(t.id);
+          return true;
+        });
+        setTransactions(uniqueTxs);
       } else {
         setTransactions([]);
       }
@@ -200,42 +206,79 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       if (cloudWs.transactions && Array.isArray(cloudWs.transactions)) {
         const deletedSet = new Set(cloudWs.deletedTransactionIds || []);
-        const validTxs = cloudWs.transactions
-          .filter((t) => !deletedSet.has(t.id))
-          .sort((a, b) => b.date.localeCompare(a.date));
+        const seenIds = new Set<string>();
+        const validTxs: ExpenseTransaction[] = [];
+
+        for (const t of cloudWs.transactions) {
+          if (t && t.id && !deletedSet.has(t.id) && !seenIds.has(t.id)) {
+            seenIds.add(t.id);
+            validTxs.push(t);
+          }
+        }
+        validTxs.sort((a, b) => b.date.localeCompare(a.date));
 
         setTransactions((prev) => {
-          if (JSON.stringify(prev) !== JSON.stringify(validTxs)) {
-            return validTxs;
+          if (
+            prev.length === validTxs.length &&
+            prev.every((t, i) => t.id === validTxs[i]?.id && t.updatedAt === validTxs[i]?.updatedAt)
+          ) {
+            return prev;
           }
-          return prev;
+          return validTxs;
         });
       }
 
       if (cloudWs.accounts && Array.isArray(cloudWs.accounts) && cloudWs.accounts.length > 0) {
+        const seenAccIds = new Set<string>();
+        const validAccs = cloudWs.accounts.filter((a) => {
+          if (!a || !a.id || seenAccIds.has(a.id)) return false;
+          seenAccIds.add(a.id);
+          return true;
+        });
         setAccounts((prev) => {
-          if (JSON.stringify(prev) !== JSON.stringify(cloudWs.accounts)) {
-            return cloudWs.accounts!;
+          if (
+            prev.length === validAccs.length &&
+            prev.every((a, i) => a.id === validAccs[i]?.id && a.updatedAt === validAccs[i]?.updatedAt)
+          ) {
+            return prev;
           }
-          return prev;
+          return validAccs;
         });
       }
 
       if (cloudWs.salaryRecords && Array.isArray(cloudWs.salaryRecords)) {
+        const seenSalIds = new Set<string>();
+        const validSals = cloudWs.salaryRecords.filter((s) => {
+          if (!s || !s.id || seenSalIds.has(s.id)) return false;
+          seenSalIds.add(s.id);
+          return true;
+        });
         setSalaryRecords((prev) => {
-          if (JSON.stringify(prev) !== JSON.stringify(cloudWs.salaryRecords)) {
-            return cloudWs.salaryRecords!;
+          if (
+            prev.length === validSals.length &&
+            prev.every((s, i) => s.id === validSals[i]?.id && s.updatedAt === validSals[i]?.updatedAt)
+          ) {
+            return prev;
           }
-          return prev;
+          return validSals;
         });
       }
 
       if (cloudWs.budgets && Array.isArray(cloudWs.budgets)) {
+        const seenMonthYears = new Set<string>();
+        const validBudgets = cloudWs.budgets.filter((b) => {
+          if (!b || !b.monthYear || seenMonthYears.has(b.monthYear)) return false;
+          seenMonthYears.add(b.monthYear);
+          return true;
+        });
         setBudgets((prev) => {
-          if (JSON.stringify(prev) !== JSON.stringify(cloudWs.budgets)) {
-            return cloudWs.budgets!;
+          if (
+            prev.length === validBudgets.length &&
+            prev.every((b, i) => b.id === validBudgets[i]?.id && b.monthYear === validBudgets[i]?.monthYear)
+          ) {
+            return prev;
           }
-          return prev;
+          return validBudgets;
         });
       }
     });
@@ -281,7 +324,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const handleAddAccount = async (accData: Omit<ExpenseAccount, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const created = await addExpenseAccount({ ...accData, userId }, userEmail);
-      setAccounts((prev) => [...prev, created]);
+      setAccounts((prev) => [...prev.filter((a) => a.id !== created.id), created]);
       showToast(`Account "${created.name}" created successfully.`);
     } catch (err: any) {
       console.error(err);
@@ -322,7 +365,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const handleAddCategory = async (catData: Omit<ExpenseCategory, 'id' | 'createdAt'>) => {
     try {
       const created = await addExpenseCategory({ ...catData, userId }, userEmail);
-      setCategories((prev) => [...prev, created]);
+      setCategories((prev) => [...prev.filter((c) => c.id !== created.id), created]);
       showToast(`Category "${created.name}" added.`);
     } catch (err: any) {
       console.error(err);
@@ -371,7 +414,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     try {
       const created = await addSalaryRecord({ ...salData, userId }, userEmail);
-      setSalaryRecords((prev) => [created, ...prev]);
+      setSalaryRecords((prev) => [created, ...prev.filter((s) => s.id !== created.id)]);
       const updatedTxs = await getExpenseTransactions(userId, userEmail);
       setTransactions(updatedTxs);
       showToast(`Salary for ${salData.monthYear} recorded successfully.`);
@@ -414,7 +457,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   ) => {
     try {
       const created = await addExpenseTransaction({ ...txData, userId }, userEmail);
-      setTransactions((prev) => [created, ...prev]);
+      setTransactions((prev) => [created, ...prev.filter((t) => t.id !== created.id)]);
       showToast(`Transaction "${created.title}" added.`);
     } catch (err: any) {
       console.error(err);
@@ -455,7 +498,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         title: `${tx.title} (Copy)`,
         date: new Date().toISOString().slice(0, 10),
       }, userEmail);
-      setTransactions((prev) => [duplicated, ...prev]);
+      setTransactions((prev) => [duplicated, ...prev.filter((t) => t.id !== duplicated.id)]);
       showToast(`Duplicated "${tx.title}".`);
     } catch (err: any) {
       console.error(err);

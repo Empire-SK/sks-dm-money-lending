@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, DollarSign, Calendar, AlertCircle, Coins, Award, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useExpense } from '../../contexts/ExpenseContext';
@@ -46,7 +46,15 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
   const [receivedDate, setReceivedDate] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -81,6 +89,7 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || isSubmittingRef.current) return;
     setError('');
 
     const baseNum = parseIndianNumber(baseSalary);
@@ -110,6 +119,7 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
     }
 
     try {
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
 
       const payload = {
@@ -135,6 +145,7 @@ export const SalaryModal: React.FC<SalaryModalProps> = ({
       console.error(err);
       setError(err.message || 'Failed to save salary record.');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

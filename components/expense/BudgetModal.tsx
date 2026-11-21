@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Target, AlertCircle, Sparkles } from 'lucide-react';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { MonthlyBudget } from '../../types/expense';
@@ -40,7 +40,15 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
   const [overallBudget, setOverallBudget] = useState('');
   const [categoryBudgets, setCategoryBudgets] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const existing = budgets.find((b) => b.monthYear === activeMonthYear);
@@ -71,6 +79,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || isSubmittingRef.current) return;
     setError('');
 
     const overallNum = parseIndianNumber(overallBudget);
@@ -80,6 +89,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
     }
 
     try {
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
       const parsedCatBudgets: Record<string, number> = {};
       Object.entries(categoryBudgets).forEach(([catId, val]) => {
@@ -95,6 +105,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
       console.error(err);
       setError(err.message || 'Failed to save budget settings.');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

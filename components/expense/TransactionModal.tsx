@@ -78,8 +78,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [receiptName, setReceiptName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
   const [error, setError] = useState('');
+
+  // Reset submission state when modal visibility changes
+  useEffect(() => {
+    if (!isOpen) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   // Populate initial data when editing or opening
   useEffect(() => {
@@ -150,6 +159,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || isSubmittingRef.current) return;
     setError('');
 
     const numAmount = parseIndianNumber(amount);
@@ -177,6 +187,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     }
 
     try {
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
 
       const isDedicated = type === 'transfer' ? transferCategory !== 'general' : false;
@@ -224,6 +235,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       console.error(err);
       setError(err.message || 'Failed to save transaction');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };

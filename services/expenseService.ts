@@ -257,6 +257,38 @@ export const saveExpenseWorkspaceCloud = async (
     const newDeletedIds = partialData.deletedTransactionIds || [];
     const mergedDeletedIds = Array.from(new Set([...existingDeletedIds, ...newDeletedIds]));
 
+    const sanitizeUniqueById = <T extends { id?: string }>(items?: T[]): T[] => {
+      if (!items || !Array.isArray(items)) return [];
+      const seen = new Set<string>();
+      const result: T[] = [];
+      for (const item of items) {
+        if (item && item.id && !seen.has(item.id)) {
+          seen.add(item.id);
+          result.push(item);
+        }
+      }
+      return result;
+    };
+
+    const sanitizeUniqueBudgets = (budgets?: MonthlyBudget[]): MonthlyBudget[] => {
+      if (!budgets || !Array.isArray(budgets)) return [];
+      const seen = new Set<string>();
+      const result: MonthlyBudget[] = [];
+      for (const b of budgets) {
+        if (b && b.monthYear && !seen.has(b.monthYear)) {
+          seen.add(b.monthYear);
+          result.push(b);
+        }
+      }
+      return result;
+    };
+
+    const rawTxs = partialData.transactions !== undefined ? partialData.transactions : (existingData?.transactions || []);
+    const rawAccs = partialData.accounts !== undefined ? partialData.accounts : (existingData?.accounts || []);
+    const rawSals = partialData.salaryRecords !== undefined ? partialData.salaryRecords : (existingData?.salaryRecords || []);
+    const rawBudgets = partialData.budgets !== undefined ? partialData.budgets : (existingData?.budgets || []);
+    const rawCats = partialData.categories !== undefined ? partialData.categories : (existingData?.categories || []);
+
     const updatedDoc: ExpenseWorkspaceCloudDoc = {
       id: docId,
       isExpenseWorkspace: true,
@@ -264,11 +296,11 @@ export const saveExpenseWorkspaceCloud = async (
       userId: userId || 'admin',
       userEmail: userEmail || null,
       updatedAt: now,
-      transactions: partialData.transactions !== undefined ? partialData.transactions : (existingData?.transactions || []),
-      accounts: partialData.accounts !== undefined ? partialData.accounts : (existingData?.accounts || []),
-      salaryRecords: partialData.salaryRecords !== undefined ? partialData.salaryRecords : (existingData?.salaryRecords || []),
-      budgets: partialData.budgets !== undefined ? partialData.budgets : (existingData?.budgets || []),
-      categories: partialData.categories !== undefined ? partialData.categories : (existingData?.categories || []),
+      transactions: sanitizeUniqueById(rawTxs),
+      accounts: sanitizeUniqueById(rawAccs),
+      salaryRecords: sanitizeUniqueById(rawSals),
+      budgets: sanitizeUniqueBudgets(rawBudgets),
+      categories: sanitizeUniqueById(rawCats),
       deletedTransactionIds: mergedDeletedIds,
     };
 
@@ -1075,7 +1107,14 @@ export const getExpenseTransactions = async (
     console.warn('Workspace cloud sync failed for transactions, using local:', cloudErr);
   }
 
-  return localTxs.sort((a, b) => b.date.localeCompare(a.date));
+  const seenLocal = new Set<string>();
+  const uniqueLocalTxs = localTxs.filter((t) => {
+    if (!t || !t.id || seenLocal.has(t.id)) return false;
+    seenLocal.add(t.id);
+    return true;
+  });
+
+  return uniqueLocalTxs.sort((a, b) => b.date.localeCompare(a.date));
 };
 
 export const addExpenseTransaction = async (

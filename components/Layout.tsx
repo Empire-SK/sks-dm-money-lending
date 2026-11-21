@@ -203,7 +203,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
               </span>
             </div>
             <button
-              onClick={toggleTheme}
+              onClick={(e) => toggleTheme(e)}
               className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gray-300 dark:bg-zinc-700 p-0.5"
               title="Toggle between Light Bento and Dark Mode"
               aria-label="Toggle theme"
@@ -260,7 +260,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={toggleTheme}
+              onClick={(e) => toggleTheme(e)}
               className="p-2 rounded-xl text-slate-500 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
               title="Toggle theme"
             >

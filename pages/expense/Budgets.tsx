@@ -69,10 +69,10 @@ export const Budgets: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-zinc-100">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">
             Monthly Budget Management ({formatMonthYear(selectedMonthYear)})
           </h2>
-          <p className="text-[11px] sm:text-xs text-zinc-500">
+          <p className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-400 font-semibold">
             Set and track spending limits across categories to control your outflow
           </p>
         </div>
@@ -91,7 +91,7 @@ export const Budgets: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-400">
                 Overall Spending Limit
               </span>
               {overallBudget > 0 && (
@@ -102,14 +102,14 @@ export const Budgets: React.FC = () => {
             </div>
 
             <div className="flex items-baseline gap-2 sm:gap-3 mt-1.5 sm:mt-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-zinc-100 tabular-nums">
+              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 tabular-nums">
                 {overallBudget > 0 ? formatINR(overallBudget) : 'No Budget Set'}
               </span>
-              <span className="text-xs text-zinc-500">monthly maximum</span>
+              <span className="text-xs text-slate-600 dark:text-zinc-400 font-semibold">monthly maximum</span>
             </div>
 
             {/* Progress bar */}
-            <div className="w-full bg-zinc-950 rounded-full h-3 mt-3 sm:mt-4 p-0.5 border border-zinc-800 overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-zinc-950 rounded-full h-3 mt-3 sm:mt-4 p-0.5 border border-slate-300 dark:border-zinc-800 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   overallAlert.status === 'exceeded'
@@ -127,34 +127,34 @@ export const Budgets: React.FC = () => {
             {/* Sub-metrics */}
             <div className="grid grid-cols-3 gap-2 mt-3 sm:mt-4 text-xs">
               <div>
-                <p className="text-zinc-500 text-[11px]">Spent</p>
-                <p className="text-xs sm:text-sm font-bold text-rose-400 tabular-nums mt-0.5">
+                <p className="text-slate-600 dark:text-zinc-400 text-[11px] font-bold">Spent</p>
+                <p className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 tabular-nums mt-0.5">
                   {formatINR(overallSpent)}
                 </p>
               </div>
               <div>
-                <p className="text-zinc-500 text-[11px]">Remaining</p>
+                <p className="text-slate-600 dark:text-zinc-400 text-[11px] font-bold">Remaining</p>
                 <p
                   className={`text-xs sm:text-sm font-bold tabular-nums mt-0.5 ${
-                    overallRemaining >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    overallRemaining >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}
                 >
                   {formatINR(overallRemaining)}
                 </p>
               </div>
               <div>
-                <p className="text-zinc-500 text-[11px]">Used</p>
-                <p className="text-xs sm:text-sm font-bold text-zinc-200 tabular-nums mt-0.5">
+                <p className="text-slate-600 dark:text-zinc-400 text-[11px] font-bold">Used</p>
+                <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-zinc-200 tabular-nums mt-0.5">
                   {overallBudget > 0 ? `${overallAlert.percentage}%` : '0%'}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="p-3.5 sm:p-5 bg-zinc-950/60 rounded-2xl border border-zinc-800 text-center min-w-[180px]">
-            <Target size={26} className="text-emerald-400 mx-auto mb-1.5" />
-            <p className="text-xs font-semibold text-zinc-300">Monthly Reset Rule</p>
-            <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5">
+          <div className="p-3.5 sm:p-5 bg-slate-50 dark:bg-zinc-950/60 rounded-2xl border border-slate-200 dark:border-zinc-800 text-center min-w-[180px] shadow-sm dark:shadow-none">
+            <Target size={26} className="text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
+            <p className="text-xs font-bold text-slate-900 dark:text-zinc-300">Monthly Reset Rule</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-600 dark:text-zinc-400 mt-0.5 font-medium">
               Budgets reset cleanly each month with independent limits.
             </p>
           </div>
@@ -163,9 +163,9 @@ export const Budgets: React.FC = () => {
 
       {/* ── Section B: Category-wise Budgets ── */}
       <div className="glass-card overflow-hidden">
-        <div className="p-3.5 sm:p-4 border-b border-zinc-800/80">
-          <h3 className="text-xs sm:text-sm font-bold text-zinc-100">Category-Wise Spending Limits</h3>
-          <p className="text-[10px] sm:text-xs text-zinc-500">Refunds automatically reduce category net spending</p>
+        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-zinc-800/80">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100">Category-Wise Spending Limits</h3>
+          <p className="text-[10px] sm:text-xs text-slate-600 dark:text-zinc-400 font-semibold">Refunds automatically reduce category net spending</p>
         </div>
 
         {/* Mobile View: Card-based list (md:hidden) */}
@@ -233,7 +233,7 @@ export const Budgets: React.FC = () => {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 text-slate-700 dark:text-zinc-400 font-bold uppercase tracking-wider">
                 <th className="py-3 px-4">Category</th>
                 <th className="py-3 px-4 text-right">Budget Limit</th>
                 <th className="py-3 px-4 text-right">Spent</th>
@@ -242,9 +242,9 @@ export const Budgets: React.FC = () => {
                 <th className="py-3 px-4 text-right">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {categoryBudgetRows.map((row) => (
-                <tr key={row.category.id} className="hover:bg-zinc-800/40 transition-colors">
+                <tr key={row.category.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors">
                   <td className="py-3 px-4 whitespace-nowrap">
                     <div className="flex items-center gap-2.5">
                       <div
@@ -256,15 +256,15 @@ export const Budgets: React.FC = () => {
                       >
                         <CategoryIcon name={row.category.icon} size={15} />
                       </div>
-                      <span className="font-semibold text-zinc-200">{row.category.name}</span>
+                      <span className="font-bold text-slate-900 dark:text-zinc-200">{row.category.name}</span>
                     </div>
                   </td>
 
-                  <td className="py-3 px-4 text-right whitespace-nowrap text-zinc-300 font-bold">
-                    {row.budget > 0 ? formatINR(row.budget) : <span className="text-zinc-600 font-normal">No Limit</span>}
+                  <td className="py-3 px-4 text-right whitespace-nowrap text-slate-900 dark:text-zinc-300 font-bold">
+                    {row.budget > 0 ? formatINR(row.budget) : <span className="text-slate-500 dark:text-zinc-500 font-normal">No Limit</span>}
                   </td>
 
-                  <td className="py-3 px-4 text-right whitespace-nowrap font-medium text-rose-400">
+                  <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-rose-600 dark:text-rose-400">
                     {formatINR(row.spent)}
                   </td>
 
@@ -272,9 +272,9 @@ export const Budgets: React.FC = () => {
                     className={`py-3 px-4 text-right whitespace-nowrap font-bold ${
                       row.budget > 0
                         ? row.remaining >= 0
-                          ? 'text-emerald-400'
-                          : 'text-rose-400'
-                        : 'text-zinc-500'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                        : 'text-slate-500 dark:text-zinc-500'
                     }`}
                   >
                     {row.budget > 0 ? formatINR(row.remaining) : '-'}
@@ -282,7 +282,7 @@ export const Budgets: React.FC = () => {
 
                   <td className="py-3 px-4 min-w-[140px]">
                     {row.budget > 0 ? (
-                      <div className="w-full bg-zinc-950 rounded-full h-2 border border-zinc-800 overflow-hidden">
+                      <div className="w-full bg-slate-200 dark:bg-zinc-950 rounded-full h-2 border border-slate-300 dark:border-zinc-800 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
                             row.alert.status === 'exceeded'
@@ -297,7 +297,7 @@ export const Budgets: React.FC = () => {
                         />
                       </div>
                     ) : (
-                      <div className="text-center text-zinc-600">-</div>
+                      <div className="text-center text-slate-400 dark:text-zinc-600">-</div>
                     )}
                   </td>
 

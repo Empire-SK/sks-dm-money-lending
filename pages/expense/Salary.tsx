@@ -74,23 +74,23 @@ export const Salary: React.FC = () => {
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-zinc-100">Monthly Salary Management</h2>
-          <p className="text-[11px] sm:text-xs text-zinc-500">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">Monthly Salary Management</h2>
+          <p className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-400 font-semibold">
             Record manual monthly salary deposits, bonuses, and incentives
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Year selector */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs">
-            <span className="text-zinc-500 font-medium">Year:</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs shadow-sm">
+            <span className="text-slate-600 dark:text-zinc-400 font-bold">Year:</span>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-transparent border-none text-zinc-200 text-xs focus:outline-none cursor-pointer font-bold select-inline"
+              className="bg-transparent border-none text-slate-900 dark:text-zinc-200 text-xs focus:outline-none cursor-pointer font-bold select-inline"
             >
               {availableYears.map((y) => (
-                <option key={y} value={y} className="bg-zinc-900 text-zinc-100">
+                <option key={y} value={y} className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100">
                   {y}
                 </option>
               ))}
@@ -113,57 +113,57 @@ export const Salary: React.FC = () => {
       {/* Yearly Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <div className="glass-card p-3.5 sm:p-4">
-          <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
             Total {selectedYear} Income
           </p>
-          <p className="text-lg sm:text-2xl font-bold mt-1 text-emerald-400 tabular-nums truncate">
+          <p className="text-lg sm:text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-400 tabular-nums truncate">
             {formatINR(yearlyStats.grandTotal)}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">{filteredRecords.length} recorded months</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">{filteredRecords.length} recorded months</p>
         </div>
 
         <div className="glass-card p-3.5 sm:p-4">
-          <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
             Base Salary Total
           </p>
-          <p className="text-lg sm:text-2xl font-bold mt-1 text-zinc-100 tabular-nums truncate">
+          <p className="text-lg sm:text-2xl font-black mt-1 text-slate-900 dark:text-zinc-100 tabular-nums truncate">
             {formatINR(yearlyStats.totalBase)}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">
+          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">
             Avg: {formatINR(filteredRecords.length ? yearlyStats.totalBase / filteredRecords.length : 0)} / mo
           </p>
         </div>
 
         <div className="glass-card p-3.5 sm:p-4">
-          <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
             Bonuses & Incentives
           </p>
-          <p className="text-lg sm:text-2xl font-bold mt-1 text-amber-400 tabular-nums truncate">
+          <p className="text-lg sm:text-2xl font-black mt-1 text-amber-600 dark:text-amber-400 tabular-nums truncate">
             {formatINR(yearlyStats.totalBonus + yearlyStats.totalIncentive)}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">
+          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">
             Bonus: {formatINR(yearlyStats.totalBonus)}
           </p>
         </div>
 
         <div className="glass-card p-3.5 sm:p-4">
-          <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+          <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
             Other Incomes
           </p>
-          <p className="text-lg sm:text-2xl font-bold mt-1 text-sky-400 tabular-nums truncate">
+          <p className="text-lg sm:text-2xl font-black mt-1 text-sky-600 dark:text-sky-400 tabular-nums truncate">
             {formatINR(yearlyStats.totalOther)}
           </p>
-          <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">Supplementary income</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">Supplementary income</p>
         </div>
       </div>
 
       {/* Salary History */}
       <div className="glass-card overflow-hidden">
-        <div className="p-3.5 sm:p-4 border-b border-zinc-800/80 flex items-center justify-between">
-          <h3 className="text-xs sm:text-sm font-bold text-zinc-100">
+        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-zinc-800/80 flex items-center justify-between">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100">
             Salary History ({selectedYear})
           </h3>
-          <span className="text-[11px] sm:text-xs text-zinc-500">
+          <span className="text-[11px] sm:text-xs text-slate-600 dark:text-zinc-400 font-semibold">
             {filteredRecords.length} records found
           </span>
         </div>
@@ -240,7 +240,7 @@ export const Salary: React.FC = () => {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+              <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 text-slate-700 dark:text-zinc-400 font-bold uppercase tracking-wider">
                 <th className="py-3 px-4">Month</th>
                 <th className="py-3 px-4">Credited Account</th>
                 <th className="py-3 px-4">Received Date</th>
@@ -248,55 +248,55 @@ export const Salary: React.FC = () => {
                 <th className="py-3 px-4 text-right">Bonus</th>
                 <th className="py-3 px-4 text-right">Incentives</th>
                 <th className="py-3 px-4 text-right">Other Income</th>
-                <th className="py-3 px-4 text-right font-bold text-zinc-300">Total Income</th>
+                <th className="py-3 px-4 text-right font-bold text-slate-900 dark:text-zinc-300">Total Income</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {filteredRecords.map((record) => {
                 const acc = accounts.find((a) => a.id === record.accountId);
 
                 return (
                   <tr
                     key={record.id}
-                    className="hover:bg-zinc-800/40 transition-colors group"
+                    className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors group"
                   >
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="font-bold text-zinc-200 text-sm">
+                      <div className="font-bold text-slate-900 dark:text-zinc-200 text-sm">
                         {formatMonthYear(record.monthYear)}
                       </div>
                       {record.note && (
-                        <div className="text-[10px] text-zinc-500 truncate max-w-xs">
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate max-w-xs font-medium">
                           {record.note}
                         </div>
                       )}
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap text-zinc-400">
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-800 dark:text-zinc-300 font-semibold">
                       {acc?.name || 'Account'}
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap text-zinc-400">
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-zinc-400 font-medium">
                       {record.receivedDate}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap text-zinc-300 font-medium">
+                    <td className="py-3 px-4 text-right whitespace-nowrap text-slate-800 dark:text-zinc-300 font-bold">
                       {formatINR(record.baseSalary)}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap text-amber-400">
+                    <td className="py-3 px-4 text-right whitespace-nowrap text-amber-600 dark:text-amber-400 font-semibold">
                       {record.bonus > 0 ? formatINR(record.bonus) : '-'}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap text-amber-400">
+                    <td className="py-3 px-4 text-right whitespace-nowrap text-amber-600 dark:text-amber-400 font-semibold">
                       {record.incentive > 0 ? formatINR(record.incentive) : '-'}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap text-sky-400">
+                    <td className="py-3 px-4 text-right whitespace-nowrap text-sky-600 dark:text-sky-400 font-semibold">
                       {record.otherIncome > 0 ? formatINR(record.otherIncome) : '-'}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-emerald-400 text-sm">
+                    <td className="py-3 px-4 text-right whitespace-nowrap font-black text-emerald-600 dark:text-emerald-400 text-sm">
                       {formatINR(record.totalIncome)}
                     </td>
 

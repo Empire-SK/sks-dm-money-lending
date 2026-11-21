@@ -88,8 +88,8 @@ export const Accounts: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-zinc-100">Account Management</h2>
-          <p className="text-[11px] sm:text-xs text-zinc-500">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">Account Management</h2>
+          <p className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-400 font-semibold">
             Track and reconcile real money balances in Cash, UPI, and Bank accounts
           </p>
         </div>
@@ -107,29 +107,29 @@ export const Accounts: React.FC = () => {
       </div>
 
       {/* Total Balance Banner */}
-      <div className="glass-card p-4 sm:p-6 bg-gradient-to-br from-zinc-900 to-zinc-950 border border-emerald-500/20">
+      <div className="glass-card p-4 sm:p-6 bg-emerald-950/10 dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-950 border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm dark:shadow-none">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-emerald-400">
+            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
               Available Spendable Balance (Liquid)
             </p>
             <div className="flex items-baseline gap-3 mt-1 flex-wrap">
-              <span className="text-2xl sm:text-4xl font-extrabold text-zinc-100 tabular-nums">
+              <span className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-zinc-100 tabular-nums">
                 {formatINR(liquidSpendableBalance)}
               </span>
               {dedicatedSavingsBalance > 0 && (
-                <span className="text-xs sm:text-sm font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                <span className="text-xs sm:text-sm font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-200 dark:border-purple-500/20">
                   + {formatINR(dedicatedSavingsBalance)} Dedicated Savings
                 </span>
               )}
             </div>
-            <p className="text-[11px] sm:text-xs text-zinc-500 mt-1.5">
-              Spendable cash & primary accounts. Total combined wealth across all accounts: <strong className="text-zinc-300 font-bold">{formatINR(totalNetWorth)}</strong>
+            <p className="text-[11px] sm:text-xs text-slate-600 dark:text-zinc-400 mt-1.5 font-medium">
+              Spendable cash & primary accounts. Total combined wealth across all accounts: <strong className="text-slate-900 dark:text-zinc-300 font-bold">{formatINR(totalNetWorth)}</strong>
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] sm:text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-400 text-[11px] sm:text-xs font-bold shadow-sm">
               <ShieldCheck size={15} /> Reconciled & Isolated
             </span>
           </div>
@@ -147,7 +147,7 @@ export const Accounts: React.FC = () => {
           return (
             <div
               key={acc.id}
-              className="glass-card p-4 sm:p-5 flex flex-col justify-between hover:border-zinc-700/80 transition-all group"
+              className="glass-card p-4 sm:p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-zinc-700/80 transition-all group"
             >
               <div>
                 <div className="flex items-start justify-between">
@@ -170,34 +170,34 @@ export const Accounts: React.FC = () => {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="text-xs sm:text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors truncate">
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
                           {acc.name}
                         </h3>
                         {isSavingsVault ? (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/25">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/25">
                             Savings Vault
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                             Spending
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] sm:text-[11px] text-zinc-500 capitalize">{acc.type} Account</p>
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 capitalize font-medium">{acc.type} Account</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button
                       onClick={() => handleEdit(acc)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
                       title="Edit account"
                     >
                       <Edit2 size={13} />
                     </button>
                     <button
                       onClick={() => handleDelete(acc)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                       title="Delete account"
                     >
                       <Trash2 size={13} />
@@ -206,36 +206,36 @@ export const Accounts: React.FC = () => {
                 </div>
 
                 {/* Balance display */}
-                <div className="mt-4 sm:mt-5 p-3 sm:p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                  <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                <div className="mt-4 sm:mt-5 p-3 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none">
+                  <p className="text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
                     Current Balance
                   </p>
-                  <p className="text-xl sm:text-2xl font-extrabold text-zinc-100 mt-0.5 tabular-nums">
+                  <p className="text-xl sm:text-2xl font-black text-slate-900 dark:text-zinc-100 mt-0.5 tabular-nums">
                     {formatINR(item.currentBalance)}
                   </p>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">
+                  <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-0.5 font-medium">
                     Opening: {formatINR(acc.openingBalance)}
                   </p>
                 </div>
 
                 {/* Flow Details */}
-                <div className="mt-3 sm:mt-4 space-y-1.5 text-[11px] sm:text-xs text-zinc-400">
+                <div className="mt-3 sm:mt-4 space-y-1.5 text-[11px] sm:text-xs text-slate-700 dark:text-zinc-300 font-medium">
                   <div className="flex items-center justify-between">
                     <span>Total Income Credited:</span>
-                    <span className="text-emerald-400 font-semibold tabular-nums">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
                       +{formatINR(item.totalIncome)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Total Outflow (Expenses):</span>
-                    <span className="text-rose-400 font-semibold tabular-nums">
+                    <span className="text-rose-600 dark:text-rose-400 font-bold tabular-nums">
                       -{formatINR(item.totalExpenses)}
                     </span>
                   </div>
                   {item.totalRefunds > 0 && (
                     <div className="flex items-center justify-between">
                       <span>Total Refunds Received:</span>
-                      <span className="text-purple-400 font-semibold tabular-nums">
+                      <span className="text-purple-600 dark:text-purple-400 font-bold tabular-nums">
                         +{formatINR(item.totalRefunds)}
                       </span>
                     </div>

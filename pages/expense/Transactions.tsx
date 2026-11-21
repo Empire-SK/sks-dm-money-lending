@@ -172,8 +172,8 @@ export const Transactions: React.FC = () => {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-zinc-100">Transaction History</h2>
-          <p className="text-[11px] sm:text-xs text-zinc-500">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">Transaction History</h2>
+          <p className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-400 font-semibold">
             Showing {filteredTransactions.length} of {transactions.length} total entries
           </p>
         </div>
@@ -528,10 +528,10 @@ export const Transactions: React.FC = () => {
                     {/* Category */}
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
                           isDedicatedSavingsTransfer
-                            ? 'bg-purple-500/10 border-purple-500/30 text-purple-300'
-                            : 'bg-zinc-800/80 border-zinc-700/50 text-zinc-300'
+                            ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-300'
+                            : 'bg-slate-100 dark:bg-zinc-800/80 border-slate-200/90 dark:border-zinc-700/50 text-slate-800 dark:text-zinc-300 shadow-sm dark:shadow-none'
                         }`}
                       >
                         <CategoryIcon
@@ -556,7 +556,7 @@ export const Transactions: React.FC = () => {
                             : cat?.name || 'General'}
                         </span>
                         {tx.subcategory && !isIncome && !isTransfer && (
-                          <span className="text-[10px] text-zinc-500">
+                          <span className="text-[10px] text-slate-600 dark:text-zinc-400 font-medium">
                             • {tx.subcategory}
                           </span>
                         )}
@@ -588,7 +588,7 @@ export const Transactions: React.FC = () => {
                     </td>
 
                     {/* Payment Account */}
-                    <td className="py-3 px-4 whitespace-nowrap text-zinc-300 font-medium">
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-800 dark:text-zinc-300 font-semibold">
                       {isTransfer ? (
                         <span>
                           {acc?.name || 'Src'} → {toAcc?.name || 'Dest'}
@@ -603,12 +603,12 @@ export const Transactions: React.FC = () => {
                       <span
                         className={
                           isIncome
-                            ? 'text-emerald-400'
+                            ? 'text-emerald-600 dark:text-emerald-400'
                             : isExpense
-                            ? 'text-rose-400'
+                            ? 'text-rose-600 dark:text-rose-400'
                             : isRefund
-                            ? 'text-purple-400'
-                            : 'text-blue-400'
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : 'text-blue-600 dark:text-blue-400'
                         }
                       >
                         {isIncome && '+'}
@@ -626,13 +626,13 @@ export const Transactions: React.FC = () => {
                             setViewingReceiptUrl(tx.receiptUrl || '');
                             setViewingReceiptName(tx.receiptName || 'Receipt');
                           }}
-                          className="p-1 rounded text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors"
+                          className="p-1 rounded text-slate-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                           title="View Receipt"
                         >
                           <FileText size={16} />
                         </button>
                       ) : (
-                        <span className="text-zinc-600">-</span>
+                        <span className="text-slate-400 dark:text-zinc-600">-</span>
                       )}
                     </td>
 
@@ -641,7 +641,7 @@ export const Transactions: React.FC = () => {
                       <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleDuplicateTransaction(tx)}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-sky-400 hover:bg-sky-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-500/10 transition-colors"
                           title="Duplicate transaction"
                         >
                           <Copy size={14} />

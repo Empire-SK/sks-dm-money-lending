@@ -53,8 +53,8 @@ export const Categories: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-zinc-100">Expense Categories</h2>
-          <p className="text-[11px] sm:text-xs text-zinc-500">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">Expense Categories</h2>
+          <p className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-400 font-semibold">
             Manage your categories, subcategories, custom icons, and visual themes
           </p>
         </div>
@@ -80,7 +80,7 @@ export const Categories: React.FC = () => {
           return (
             <div
               key={cat.id}
-              className="glass-card p-4 sm:p-5 flex flex-col justify-between hover:border-zinc-700/80 transition-all group"
+              className="glass-card p-4 sm:p-5 flex flex-col justify-between hover:border-slate-300 dark:hover:border-zinc-700/80 transition-all group"
             >
               <div>
                 <div className="flex items-start justify-between">
@@ -96,10 +96,10 @@ export const Categories: React.FC = () => {
                       <CategoryIcon name={cat.icon} size={18} />
                     </div>
                     <div>
-                      <h3 className="text-xs sm:text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                         {cat.name}
                       </h3>
-                      <p className="text-[10px] sm:text-[11px] text-zinc-500">
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium">
                         {totalHistoryTxCount} total transactions
                       </p>
                     </div>
@@ -108,14 +108,14 @@ export const Categories: React.FC = () => {
                   <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleEdit(cat)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
                       title="Edit category"
                     >
                       <Edit2 size={13} />
                     </button>
                     <button
                       onClick={() => handleDelete(cat)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                       title="Delete category"
                     >
                       <Trash2 size={13} />
@@ -125,7 +125,7 @@ export const Categories: React.FC = () => {
 
                 {/* Subcategories tags */}
                 <div className="mt-3 sm:mt-4">
-                  <p className="text-[9px] sm:text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-1">
                     Subcategories ({cat.subcategories?.length || 0})
                   </p>
                   <div className="flex flex-wrap gap-1">
@@ -133,24 +133,24 @@ export const Categories: React.FC = () => {
                       cat.subcategories.map((sub, i) => (
                         <span
                           key={i}
-                          className="px-2 py-0.5 rounded-md bg-zinc-950 text-zinc-300 text-[10px] border border-zinc-800 font-medium"
+                          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-950 text-slate-800 dark:text-zinc-300 text-[10px] border border-slate-200 dark:border-zinc-800 font-semibold"
                         >
                           {sub}
                         </span>
                       ))
                     ) : (
-                      <span className="text-[10px] text-zinc-600 italic">None defined</span>
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-600 italic font-medium">None defined</span>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Card Footer: Monthly Spent */}
-              <div className="mt-4 sm:mt-5 pt-2.5 sm:pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
-                <span className="text-zinc-500 text-[11px]">
+              <div className="mt-4 sm:mt-5 pt-2.5 sm:pt-3 border-t border-slate-200/80 dark:border-zinc-800/80 flex items-center justify-between text-xs">
+                <span className="text-slate-600 dark:text-zinc-400 text-[11px] font-medium">
                   Spent ({formatMonthYear(selectedMonthYear)}):
                 </span>
-                <span className="font-bold text-zinc-200 tabular-nums">
+                <span className="font-black text-slate-900 dark:text-zinc-200 tabular-nums">
                   {formatINR(spentThisMonth)}
                 </span>
               </div>

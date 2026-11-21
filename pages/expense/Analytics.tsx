@@ -206,10 +206,10 @@ export const Analytics: React.FC = () => {
       {/* Header and export buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-zinc-100">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-zinc-100">
             Financial Analytics & Spending Trends
           </h2>
-          <p className="text-[11px] sm:text-xs text-zinc-500">
+          <p className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-400 font-semibold">
             Comparing {formatMonthYear(selectedMonthYear)} vs {formatMonthYear(prevMonthYear)}
           </p>
         </div>
@@ -236,47 +236,47 @@ export const Analytics: React.FC = () => {
         {/* ── Key Metrics Overview ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           <div className="glass-card p-3.5 sm:p-4">
-            <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
               Avg Daily Spending
             </p>
-            <p className="text-lg sm:text-2xl font-bold mt-1 text-zinc-100 tabular-nums truncate">
+            <p className="text-lg sm:text-2xl font-black mt-1 text-slate-900 dark:text-zinc-100 tabular-nums truncate">
               {formatINR(avgDailySpending)}
             </p>
-            <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">{daysInMonth} days in month</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">{daysInMonth} days in month</p>
           </div>
 
           <div className="glass-card p-3.5 sm:p-4">
-            <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
               Top Category
             </p>
-            <p className="text-sm sm:text-lg font-bold mt-1 text-rose-400 truncate">
+            <p className="text-sm sm:text-lg font-bold mt-1 text-rose-600 dark:text-rose-400 truncate">
               {highestCategory ? highestCategory.category.name : 'None'}
             </p>
-            <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">
               {highestCategory ? `${formatINR(highestCategory.currentSpent)} (${highestCategory.percentOfTotal}%)` : 'No data'}
             </p>
           </div>
 
           <div className="glass-card p-3.5 sm:p-4">
-            <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
               Lowest Category
             </p>
-            <p className="text-sm sm:text-lg font-bold mt-1 text-emerald-400 truncate">
+            <p className="text-sm sm:text-lg font-bold mt-1 text-emerald-600 dark:text-emerald-400 truncate">
               {lowestCategory ? lowestCategory.category.name : 'None'}
             </p>
-            <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">
               {lowestCategory ? `${formatINR(lowestCategory.currentSpent)} (${lowestCategory.percentOfTotal}%)` : 'No data'}
             </p>
           </div>
 
           <div className="glass-card p-3.5 sm:p-4">
-            <p className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <p className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
               Savings Rate
             </p>
-            <p className="text-lg sm:text-2xl font-bold mt-1 text-emerald-400 tabular-nums truncate">
+            <p className="text-lg sm:text-2xl font-black mt-1 text-emerald-600 dark:text-emerald-400 tabular-nums truncate">
               {monthlySummary.savingsRate}%
             </p>
-            <p className="text-[10px] sm:text-[11px] text-zinc-500 mt-0.5 truncate">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate font-medium">
               {formatINR(monthlySummary.monthlySavings)} saved
             </p>
           </div>
@@ -284,66 +284,66 @@ export const Analytics: React.FC = () => {
 
         {/* ── Month-over-Month Comparison Cards ── */}
         <div className="glass-card p-4 sm:p-5">
-          <h3 className="text-xs sm:text-sm font-bold text-zinc-100 mb-3">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 mb-3">
             Month-over-Month Comparison ({formatMonthYear(selectedMonthYear)} vs {formatMonthYear(prevMonthYear)})
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Income MoM */}
-            <div className="p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800">
-              <p className="text-[10px] sm:text-xs text-zinc-500 font-semibold uppercase">Income Change</p>
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none">
+              <p className="text-[10px] sm:text-xs text-slate-600 dark:text-zinc-400 font-bold uppercase">Income Change</p>
               <div className="flex items-baseline justify-between mt-1.5">
-                <p className="text-base sm:text-xl font-bold text-zinc-100 tabular-nums">
+                <p className="text-base sm:text-xl font-black text-slate-900 dark:text-zinc-100 tabular-nums">
                   {formatINR(monthlySummary.totalIncome)}
                 </p>
                 <span
                   className={`inline-flex items-center gap-0.5 text-xs font-bold ${
-                    momDiff.incomeDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    momDiff.incomeDiff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}
                 >
                   {momDiff.incomeDiff >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                   {formatINR(Math.abs(momDiff.incomeDiff))} ({momDiff.incomePercent}%)
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-500 mt-1">Previous: {formatINR(prevMonthlySummary.totalIncome)}</p>
+              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 font-medium">Previous: {formatINR(prevMonthlySummary.totalIncome)}</p>
             </div>
 
             {/* Expenses MoM */}
-            <div className="p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800">
-              <p className="text-[10px] sm:text-xs text-zinc-500 font-semibold uppercase">Expense Change</p>
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none">
+              <p className="text-[10px] sm:text-xs text-slate-600 dark:text-zinc-400 font-bold uppercase">Expense Change</p>
               <div className="flex items-baseline justify-between mt-1.5">
-                <p className="text-base sm:text-xl font-bold text-zinc-100 tabular-nums">
+                <p className="text-base sm:text-xl font-black text-slate-900 dark:text-zinc-100 tabular-nums">
                   {formatINR(monthlySummary.netExpenses)}
                 </p>
                 <span
                   className={`inline-flex items-center gap-0.5 text-xs font-bold ${
-                    momDiff.expenseDiff <= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    momDiff.expenseDiff <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}
                 >
                   {momDiff.expenseDiff > 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                   {formatINR(Math.abs(momDiff.expenseDiff))} ({momDiff.expensePercent}%)
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-500 mt-1">Previous: {formatINR(prevMonthlySummary.netExpenses)}</p>
+              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 font-medium">Previous: {formatINR(prevMonthlySummary.netExpenses)}</p>
             </div>
 
             {/* Savings MoM */}
-            <div className="p-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800">
-              <p className="text-[10px] sm:text-xs text-zinc-500 font-semibold uppercase">Savings Change</p>
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none">
+              <p className="text-[10px] sm:text-xs text-slate-600 dark:text-zinc-400 font-bold uppercase">Savings Change</p>
               <div className="flex items-baseline justify-between mt-1.5">
-                <p className="text-base sm:text-xl font-bold text-zinc-100 tabular-nums">
+                <p className="text-base sm:text-xl font-black text-slate-900 dark:text-zinc-100 tabular-nums">
                   {formatINR(monthlySummary.monthlySavings)}
                 </p>
                 <span
                   className={`inline-flex items-center gap-0.5 text-xs font-bold ${
-                    momDiff.savingsDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    momDiff.savingsDiff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                   }`}
                 >
                   {momDiff.savingsDiff >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                   {formatINR(Math.abs(momDiff.savingsDiff))}
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-500 mt-1">Previous: {formatINR(prevMonthlySummary.monthlySavings)}</p>
+              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 font-medium">Previous: {formatINR(prevMonthlySummary.monthlySavings)}</p>
             </div>
           </div>
         </div>
@@ -418,7 +418,7 @@ export const Analytics: React.FC = () => {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/50 text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 text-slate-700 dark:text-zinc-400 font-bold uppercase tracking-wider">
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4 text-right">Current Month</th>
                   <th className="py-3 px-4 text-right">Previous Month</th>
@@ -427,9 +427,9 @@ export const Analytics: React.FC = () => {
                   <th className="py-3 px-4 text-center">Transactions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/60">
+              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                 {categoryAnalytics.map((c) => (
-                  <tr key={c.category.id} className="hover:bg-zinc-800/40 transition-colors">
+                  <tr key={c.category.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors">
                     <td className="py-3 px-4 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <div
@@ -441,38 +441,38 @@ export const Analytics: React.FC = () => {
                         >
                           <CategoryIcon name={c.category.icon} size={15} />
                         </div>
-                        <span className="font-semibold text-zinc-200">{c.category.name}</span>
+                        <span className="font-bold text-slate-900 dark:text-zinc-200">{c.category.name}</span>
                       </div>
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-zinc-100">
+                    <td className="py-3 px-4 text-right whitespace-nowrap font-black text-slate-900 dark:text-zinc-100">
                       {formatINR(c.currentSpent)}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap text-zinc-400">
+                    <td className="py-3 px-4 text-right whitespace-nowrap text-slate-700 dark:text-zinc-400 font-medium">
                       {formatINR(c.prevSpent)}
                     </td>
 
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       {c.diff !== 0 ? (
                         <span
-                          className={`font-semibold inline-flex items-center gap-0.5 ${
-                            c.diff > 0 ? 'text-rose-400' : 'text-emerald-400'
+                          className={`font-bold inline-flex items-center gap-0.5 ${
+                            c.diff > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                           }`}
                         >
                           {c.diff > 0 ? '+' : ''}
                           {formatINR(c.diff)}
                         </span>
                       ) : (
-                        <span className="text-zinc-600">-</span>
+                        <span className="text-slate-400 dark:text-zinc-600">-</span>
                       )}
                     </td>
 
-                    <td className="py-3 px-4 text-right whitespace-nowrap font-medium text-zinc-300">
+                    <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-slate-800 dark:text-zinc-300">
                       {c.percentOfTotal}%
                     </td>
 
-                    <td className="py-3 px-4 text-center whitespace-nowrap text-zinc-400">
+                    <td className="py-3 px-4 text-center whitespace-nowrap text-slate-700 dark:text-zinc-400 font-semibold">
                       {c.txCount}
                     </td>
                   </tr>

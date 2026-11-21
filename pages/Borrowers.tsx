@@ -399,20 +399,20 @@ const Borrowers: React.FC<BorrowersProps> = ({
               </div>
 
               {borrower.note && (
-                <div className="flex items-start gap-2 text-xs text-zinc-500 italic bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-3 py-2">
-                  <FileText size={12} className="flex-shrink-0 mt-0.5 text-zinc-600" /><span>{borrower.note}</span>
+                <div className="flex items-start gap-2 text-xs text-slate-600 dark:text-zinc-400 italic bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/60 rounded-lg px-3 py-2">
+                  <FileText size={12} className="flex-shrink-0 mt-0.5 text-slate-500 dark:text-zinc-500" /><span>{borrower.note}</span>
                 </div>
               )}
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: 'Lent', val: `₹${borrower.loanAmount.toLocaleString('en-IN')}`, color: 'text-zinc-100' },
-                  { label: 'Repaid', val: `₹${borrower.repaidAmount.toLocaleString('en-IN')}`, color: 'text-emerald-400' },
-                  { label: 'Pending', val: `₹${remaining.toLocaleString('en-IN')}`, color: 'text-amber-400' },
+                  { label: 'Lent', val: `₹${borrower.loanAmount.toLocaleString('en-IN')}`, color: 'text-slate-900 dark:text-zinc-100' },
+                  { label: 'Repaid', val: `₹${borrower.repaidAmount.toLocaleString('en-IN')}`, color: 'text-emerald-600 dark:text-emerald-400' },
+                  { label: 'Pending', val: `₹${remaining.toLocaleString('en-IN')}`, color: 'text-amber-600 dark:text-amber-400' },
                 ].map(s => (
-                  <div key={s.label} className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-2.5 text-center">
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-wider">{s.label}</p>
+                  <div key={s.label} className="bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/60 rounded-xl p-2.5 text-center shadow-sm dark:shadow-none">
+                    <p className="text-[10px] text-slate-600 dark:text-zinc-400 uppercase tracking-wider font-bold">{s.label}</p>
                     <p className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.val}</p>
                   </div>
                 ))}
@@ -589,9 +589,9 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
           <div className="modal-body space-y-3 sm:space-y-4">
             {repayingBorrower && (
-              <div className="flex items-center justify-between bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-2 sm:py-3">
-                <span className="text-[10px] sm:text-xs text-zinc-500">Pending</span>
-                <span className="text-sm font-bold text-amber-400">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2 sm:py-3 shadow-sm dark:shadow-none">
+                <span className="text-[10px] sm:text-xs text-slate-600 dark:text-zinc-400 font-bold">Pending</span>
+                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
                   ₹{(repayingBorrower.totalPayable - repayingBorrower.repaidAmount).toLocaleString('en-IN')}
                 </span>
               </div>
@@ -656,9 +656,9 @@ const Borrowers: React.FC<BorrowersProps> = ({
 
           <div className="modal-body space-y-3 sm:space-y-4">
             {topUpBorrower && (
-              <div className="flex items-center justify-between bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-2 sm:py-3">
-                <span className="text-[10px] sm:text-xs text-zinc-500">Current Loan</span>
-                <span className="text-sm font-bold text-violet-400">₹{topUpBorrower.loanAmount.toLocaleString('en-IN')}</span>
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-2 sm:py-3 shadow-sm dark:shadow-none">
+                <span className="text-[10px] sm:text-xs text-slate-600 dark:text-zinc-400 font-bold">Current Loan</span>
+                <span className="text-sm font-bold text-violet-600 dark:text-violet-400">₹{topUpBorrower.loanAmount.toLocaleString('en-IN')}</span>
               </div>
             )}
             <div>
@@ -721,11 +721,11 @@ const Borrowers: React.FC<BorrowersProps> = ({
           {historyBorrower.history.length === 0 ? (
             <div className="py-14 text-center text-zinc-600 text-sm">No transactions recorded yet.</div>
           ) : (
-            <div className="divide-y divide-zinc-800/60">
+              <div className="divide-y divide-slate-100 dark:divide-zinc-800/60">
               {[...historyBorrower.history]
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map((h) => (
-                  <div key={h.id} className="flex items-start gap-3 px-5 py-4 hover:bg-zinc-900/40 transition-colors group">
+                  <div key={h.id} className="flex items-start gap-3 px-5 py-4 hover:bg-slate-50 dark:hover:bg-zinc-900/40 transition-colors group">
                     {/* Type icon */}
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
                       h.type === 'loan'

@@ -22,7 +22,7 @@ html.dark {
 
 html.light {
   color-scheme: light;
-  color: #0f172a;
+  color: #09090b;
   background-color: #F4F5F7;
 }
 
@@ -44,7 +44,20 @@ html.dark body {
 
 html.light body {
   background-color: #F4F5F7;
-  color: #0f172a;
+  color: #09090b;
+}
+
+/* ── View Transitions circular wave theme switcher animation ── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 99999;
 }
 
 /* ── Scrollbar ── */
@@ -124,7 +137,13 @@ select.select-inline {
   background-size: 0.85rem 0.85rem;
 }
 
-select option {
+html.light select option {
+  background-color: #ffffff;
+  color: #09090b;
+  padding: 8px 12px;
+}
+
+html.dark select option {
   background-color: #18181b;
   color: #f4f4f5;
   padding: 8px 12px;
@@ -133,8 +152,12 @@ select option {
 /* ── Date and Month input fix for dark mode ── */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
   cursor: pointer;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
 }
 
 /* ── Smooth page transitions ── */

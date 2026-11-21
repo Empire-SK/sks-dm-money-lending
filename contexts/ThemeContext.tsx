@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 type ThemeMode = 'light' | 'dark';
 
@@ -28,6 +29,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
+  const isTransitioningRef = useRef(false);
+
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -46,76 +49,129 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const toggleTheme = (event?: React.MouseEvent | MouseEvent) => {
+    if (isTransitioningRef.current) return;
+
     const nextTheme: ThemeMode = theme === 'light' ? 'dark' : 'light';
 
-    // Get trigger coordinates from click event, or default to center/bottom-left toggle area
-    const x = event?.clientX ?? (window.innerWidth > 768 ? 60 : window.innerWidth - 60);
-    const y = event?.clientY ?? (window.innerHeight > 768 ? window.innerHeight - 80 : 30);
-    const endRadius = Math.hypot(
-      Math.max(x, window.innerWidth - x),
-      Math.max(y, window.innerHeight - y)
-    );
+    // 1. Precise origin coordinates (clientX / clientY or element center fallback)
+    let x = window.innerWidth >= 768 ? 64 : window.innerWidth - 64;
+    let y = window.innerHeight >= 768 ? window.innerHeight - 80 : 36;
 
-    // Modern View Transitions API with circular ripple wave
-    // @ts-ignore
-    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // @ts-ignore
-      const transition = document.startViewTransition(() => {
-        setThemeState(nextTheme);
-      });
-
-      transition.ready.then(() => {
-        const clipPath = [
-          `circle(0px at ${x}px ${y}px)`,
-          `circle(${endRadius}px at ${x}px ${y}px)`,
-        ];
-        document.documentElement.animate(
-          {
-            clipPath: clipPath,
-          },
-          {
-            duration: 550,
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            pseudoElement: '::view-transition-new(root)',
-          }
-        );
-      });
-      return;
+    if (event) {
+      if (typeof event.clientX === 'number' && typeof event.clientY === 'number' && (event.clientX !== 0 || event.clientY !== 0)) {
+        x = event.clientX;
+        y = event.clientY;
+      } else if (event.currentTarget && 'getBoundingClientRect' in event.currentTarget) {
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        x = rect.left + rect.width / 2;
+        y = rect.top + rect.height / 2;
+      }
     }
 
-    // High-performance DOM wave fallback for non-ViewTransition browsers
+    // 2. Maximum radius to guarantee the wave fully covers all 4 screen corners
+    const endRadius = Math.ceil(
+      Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      ) * 1.05
+    );
+
+    const root = document.documentElement;
+
+    // Check if View Transitions API is supported & user has not requested reduced motion
+    // @ts-ignore
+    const hasViewTransitions =
+      typeof document !== 'undefined' &&
+      'startViewTransition' in document &&
+      typeof (document as any).startViewTransition === 'function' &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (hasViewTransitions) {
+      isTransitioningRef.current = true;
+
+      // Temporarily disable individual CSS transitions on elements so the snapshot captures the final target styling instantly with zero mid-flight animation tearing
+      root.classList.add('theme-transitioning');
+
+      try {
+        // @ts-ignore
+        const transition = (document as any).startViewTransition(() => {
+          flushSync(() => {
+            setThemeState(nextTheme);
+            if (nextTheme === 'dark') {
+              root.classList.add('dark');
+              root.classList.remove('light');
+            } else {
+              root.classList.add('light');
+              root.classList.remove('dark');
+            }
+            try {
+              localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+            } catch {}
+          });
+        });
+
+        transition.ready.then(() => {
+          const clipPath = [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+          ];
+
+          const animation = document.documentElement.animate(
+            {
+              clipPath: clipPath,
+            },
+            {
+              duration: 780,
+              easing: 'cubic-bezier(0.25, 1, 0.35, 1)',
+              pseudoElement: '::view-transition-new(root)',
+            }
+          );
+
+          animation.onfinish = () => {
+            root.classList.remove('theme-transitioning');
+            isTransitioningRef.current = false;
+          };
+        }).catch(() => {
+          root.classList.remove('theme-transitioning');
+          isTransitioningRef.current = false;
+        });
+
+        transition.finished.finally(() => {
+          root.classList.remove('theme-transitioning');
+          isTransitioningRef.current = false;
+        });
+
+        // Safety fallback timer to guarantee flag reset
+        setTimeout(() => {
+          root.classList.remove('theme-transitioning');
+          isTransitioningRef.current = false;
+        }, 950);
+        return;
+      } catch (err) {
+        root.classList.remove('theme-transitioning');
+        isTransitioningRef.current = false;
+      }
+    }
+
+    // High-performance smooth fallback for non-ViewTransition browsers
+    isTransitioningRef.current = true;
+    root.classList.add('theme-fallback-transition');
+    setThemeState(nextTheme);
+    if (nextTheme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
     try {
-      const wave = document.createElement('div');
-      wave.className = 'theme-transition-wave-fallback';
-      wave.style.position = 'fixed';
-      wave.style.left = `${x}px`;
-      wave.style.top = `${y}px`;
-      wave.style.width = '0px';
-      wave.style.height = '0px';
-      wave.style.borderRadius = '50%';
-      wave.style.backgroundColor = nextTheme === 'dark' ? '#09090b' : '#f4f5f7';
-      wave.style.pointerEvents = 'none';
-      wave.style.zIndex = '999999';
-      wave.style.transform = 'translate(-50%, -50%)';
-      wave.style.transition = 'width 0.55s cubic-bezier(0.22, 1, 0.36, 1), height 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease 0.3s';
-      wave.style.boxShadow = nextTheme === 'dark'
-        ? '0 0 100px rgba(0,0,0,0.8)'
-        : '0 0 100px rgba(255,255,255,0.9)';
-
-      document.body.appendChild(wave);
-
-      requestAnimationFrame(() => {
-        wave.style.width = `${endRadius * 2.2}px`;
-        wave.style.height = `${endRadius * 2.2}px`;
-        wave.style.opacity = '0';
-      });
-
-      setTimeout(() => {
-        wave.remove();
-      }, 650);
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
     } catch {}
 
-    setThemeState(nextTheme);
+    setTimeout(() => {
+      root.classList.remove('theme-fallback-transition');
+      isTransitioningRef.current = false;
+    }, 450);
   };
 
   const setTheme = (newTheme: ThemeMode) => {

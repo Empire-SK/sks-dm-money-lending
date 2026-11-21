@@ -48,16 +48,46 @@ html.light body {
 }
 
 /* ── View Transitions circular wave theme switcher animation ── */
+::view-transition-group(root) {
+  animation-duration: 0.78s;
+  animation-timing-function: cubic-bezier(0.25, 1, 0.35, 1);
+}
+
+::view-transition-image-pair(root) {
+  isolation: isolate;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+  display: block;
 }
+
 ::view-transition-old(root) {
   z-index: 1;
 }
+
 ::view-transition-new(root) {
   z-index: 99999;
+}
+
+/* Disable individual CSS transitions during snapshot capture so styles resolve cleanly with 0 mid-flight tearing */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: none !important;
+}
+
+/* Non-ViewTransition browser smooth crossfade fallback */
+html.theme-fallback-transition,
+html.theme-fallback-transition body,
+html.theme-fallback-transition .glass-card,
+html.theme-fallback-transition header,
+html.theme-fallback-transition aside,
+html.theme-fallback-transition main {
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease !important;
 }
 
 /* ── Scrollbar ── */

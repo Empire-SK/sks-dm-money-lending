@@ -63,6 +63,7 @@ export interface ExpenseTransaction {
   receiptUrl?: string;
   receiptName?: string;
   notes?: string;
+  userEmail?: string | null;
   salaryRecordId?: string; // If auto-created or linked to salary
   createdAt: string;
   updatedAt?: string;

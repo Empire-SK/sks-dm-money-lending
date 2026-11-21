@@ -157,9 +157,9 @@ export const Transactions: React.FC = () => {
     const opt = {
       margin: 10,
       filename: `SKS_Transactions_${new Date().toISOString().slice(0, 10)}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#09090b' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const },
     };
 
     html2pdf().set(opt).from(element).save();

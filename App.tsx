@@ -22,6 +22,7 @@ import {
 import { AuthProvider } from './contexts/AuthContext';
 import { ExpenseProvider } from './contexts/ExpenseContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -183,49 +184,51 @@ const App: React.FC = () => {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ExpenseProvider key={currentUser?.uid || 'guest'}>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={
-                isAuthenticated ? <Navigate to="/" replace /> : <Login />
-              } />
-
-              {/* Public Statement Route */}
-              <Route path="/statement/:id" element={<BorrowerStatement />} />
-
-              <Route path="/" element={
-                isAuthenticated ? <Layout onLogout={handleLogout} /> : <Navigate to="/login" replace />
-              }>
-                {/* Lending Management Routes */}
-                <Route index element={<Dashboard borrowers={borrowers} />} />
-                <Route path="borrowers" element={
-                  <Borrowers
-                    borrowers={borrowers}
-                    onAdd={handleAddBorrower}
-                    onEdit={handleEditBorrower}
-                    onDelete={handleDeleteBorrower}
-                    onRepay={handleRepayment}
-                    onTopUp={handleTopUp}
-                    onDeleteHistory={handleDeleteHistory}
-                  />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <ExpenseProvider key={currentUser?.uid || 'guest'}>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={
+                  isAuthenticated ? <Navigate to="/" replace /> : <Login />
                 } />
 
-                {/* Personal Expense Manager Routes */}
-                <Route path="expense" element={<ExpenseOverview />} />
-                <Route path="expense/transactions" element={<Transactions />} />
-                <Route path="expense/salary" element={<Salary />} />
-                <Route path="expense/budgets" element={<Budgets />} />
-                <Route path="expense/analytics" element={<Analytics />} />
-                <Route path="expense/categories" element={<Categories />} />
-                <Route path="expense/accounts" element={<Accounts />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </ExpenseProvider>
-      </AuthProvider>
-    </ThemeProvider>
+                {/* Public Statement Route */}
+                <Route path="/statement/:id" element={<BorrowerStatement />} />
+
+                <Route path="/" element={
+                  isAuthenticated ? <Layout onLogout={handleLogout} /> : <Navigate to="/login" replace />
+                }>
+                  {/* Lending Management Routes */}
+                  <Route index element={<Dashboard borrowers={borrowers} />} />
+                  <Route path="borrowers" element={
+                    <Borrowers
+                      borrowers={borrowers}
+                      onAdd={handleAddBorrower}
+                      onEdit={handleEditBorrower}
+                      onDelete={handleDeleteBorrower}
+                      onRepay={handleRepayment}
+                      onTopUp={handleTopUp}
+                      onDeleteHistory={handleDeleteHistory}
+                    />
+                  } />
+
+                  {/* Personal Expense Manager Routes */}
+                  <Route path="expense" element={<ExpenseOverview />} />
+                  <Route path="expense/transactions" element={<Transactions />} />
+                  <Route path="expense/salary" element={<Salary />} />
+                  <Route path="expense/budgets" element={<Budgets />} />
+                  <Route path="expense/analytics" element={<Analytics />} />
+                  <Route path="expense/categories" element={<Categories />} />
+                  <Route path="expense/accounts" element={<Accounts />} />
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </ExpenseProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

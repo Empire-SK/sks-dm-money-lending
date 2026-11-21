@@ -56,7 +56,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
       setOverallBudget(existing.overallBudget ? formatIndianNumber(existing.overallBudget) : '');
       const strMap: Record<string, string> = {};
       Object.entries(existing.categoryBudgets || {}).forEach(([catId, val]) => {
-        strMap[catId] = val ? formatIndianNumber(val) : '';
+        strMap[catId] = val ? formatIndianNumber(val as number) : '';
       });
       setCategoryBudgets(strMap);
     } else {
@@ -73,8 +73,8 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
     }));
   };
 
-  const totalCategoryAllocated = Object.values(categoryBudgets).reduce((sum, val) => {
-    return sum + parseIndianNumber(val);
+  const totalCategoryAllocated = Object.values(categoryBudgets).reduce<number>((sum, val) => {
+    return sum + parseIndianNumber(val as string);
   }, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +93,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
       setIsSubmitting(true);
       const parsedCatBudgets: Record<string, number> = {};
       Object.entries(categoryBudgets).forEach(([catId, val]) => {
-        const num = parseIndianNumber(val);
+        const num = parseIndianNumber(val as string);
         if (!isNaN(num) && num > 0) {
           parsedCatBudgets[catId] = roundCurrency(num);
         }

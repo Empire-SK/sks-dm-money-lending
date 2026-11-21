@@ -173,10 +173,11 @@ export const ExpenseOverview: React.FC = () => {
 
     // Include any spending where category ID is not in categories array (e.g. cat_sip)
     Object.entries(monthlySummary.categorySpending).forEach(([catId, spent]) => {
-      if (spent > 0 && !categories.some((c) => c.id === catId)) {
+      const spentNum = Number(spent);
+      if (spentNum > 0 && !categories.some((c) => c.id === catId)) {
         list.push({
           name: catId === 'cat_sip' ? 'Investments & SIP' : catId,
-          value: spent,
+          value: spentNum,
           color: '#8B5CF6',
           icon: 'TrendingUp',
         });
